@@ -16,11 +16,11 @@
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2025.09.20-2196F3?style=for-the-badge" alt="Updated"></a>
 </div>
 
-## ◆ 介绍
+## ◎ 介绍
 
 JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画搜索、预览、下载、PDF 转换与 QQ 发送
 
-## ★ 功能特性
+## ◎ 功能特性
 
 ### 核心功能
 
@@ -40,7 +40,7 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 - 线程池和内存优化
 - 支持多种搜索格式和批量显示
 
-## ▲ 安装方法
+## ◎ 安装方法
 
 1. **下载插件**: 下载本插件到 AstrBot 的插件目录
 2. **安装依赖**: 在终端中执行以下命令:
@@ -86,7 +86,7 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 - `/jmdomain test` - 测试所有域名并显示结果
 - `/jmdomain update` - 测试并自动更新可用域名
 
-## ◇ 使用示例
+## ◎ 使用示例
 
 ### 下载与发送漫画
 
@@ -136,7 +136,7 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 /jmdomain update
 ```
 
-## ◈ 配置说明
+## ◎ 配置说明
 
 插件使用 AstrBot 的官方配置系统，配置存储在 `data/config/astrbot_plugin_jm_cosmos_config.json` 中。
 
@@ -148,7 +148,7 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 
 您可以通过 AstrBot 管理面板的"插件配置"页面轻松修改所有设置，也可以使用 `/jmconfig` 命令进行修改。
 
-## ◆ 文件结构
+## ◎ 文件结构
 
 ### 核心文件
 
@@ -165,7 +165,7 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 - `covers/` - 漫画封面缓存目录
 - `logs/` - 日志文件目录
 
-## ◉ 高级功能说明
+## ◎ 高级功能说明
 
 ### 三层下载回退机制
 
@@ -203,7 +203,7 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 - 在多种目录结构中查找图片
 - 当目录存在但无图片时提供具体提示
 
-## ◆ 常见问题
+## ◎ 常见问题
 
 ### 漫画无法下载或搜索失败
 
@@ -232,18 +232,18 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 /jmconfig proxy 你的代理地址
 ```
 
-## ▲ 注意事项
+## ◎ 注意事项
 
 - 本插件仅供学习交流使用
 - 请勿将下载的内容用于商业用途
 - 大量请求可能导致 IP 被封禁
 - 请遵守当地法律法规
 
-## ◆ 更新日志
+## ◎ 更新日志
 
 #### **v1.1.0** (2025-09-20)
 
-**▲ 重大功能更新**
+**◎ 重大功能更新**
 
 - **全新三层下载回退机制** - 显著提高下载成功率
 
@@ -320,11 +320,11 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 
 - 初始版本发布
 
-## ◈ 许可协议
+## ◎ 许可协议
 
 本插件采用 [GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html) 许可证。
 
-## ◆ 致谢
+## ◎ 致谢
 
 本项目基于或参考了以下开源项目:
 

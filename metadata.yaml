@@ -1,5 +1,5 @@
 name: jm_cosmos
-version: 1.0.7
+version: 1.1.0
 author: GEMILUXVII
-description: 下载JM漫画并转为PDF，支持预览搜索测试和更新可用域名
+description: 下载JM漫画并转为PDF，支持预览搜索测试和更新可用域名，新增三层下载回退机制和优化作者搜索
 repo: https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos

@@ -105,6 +105,7 @@ class CosmosConfig:
     max_threads: int
     debug_mode: bool
     show_cover: bool
+    pdf_encryption: str
 
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> "CosmosConfig":
@@ -118,6 +119,7 @@ class CosmosConfig:
             max_threads=config_dict.get("max_threads", 10),
             debug_mode=config_dict.get("debug_mode", False),
             show_cover=config_dict.get("show_cover", True),
+            pdf_encryption=config_dict.get("pdf_encryption", ""),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -129,6 +131,7 @@ class CosmosConfig:
             "max_threads": self.max_threads,
             "debug_mode": self.debug_mode,
             "show_cover": self.show_cover,
+            "pdf_encryption": self.pdf_encryption,
         }
 
     @classmethod
@@ -141,6 +144,7 @@ class CosmosConfig:
             max_threads=10,
             debug_mode=False,
             show_cover=True,
+            pdf_encryption="",
         )
 
         if not os.path.exists(config_path):
@@ -797,6 +801,7 @@ class ComicDownloader:
                             import img2pdf
                             from pathlib import Path
 
+
                             # 查找下载的图片文件
                             album_dir = Path(option.dir_rule.base_dir) / str(album_id)
                             if album_dir.exists():
@@ -819,7 +824,6 @@ class ComicDownloader:
                                             )
                                         )
                                     logger.info(f"已生成PDF: {pdf_path}")
-
                 return True, None
             except Exception as client_error:
                 # 如果直接使用客户端失败，回退到原方法
@@ -1070,6 +1074,7 @@ class JMCosmosPlugin(Star):
                 max_threads=max_threads,
                 debug_mode=debug_mode,
                 show_cover=bool(config.get("show_cover", True)),  # 添加 show_cover
+                pdf_encryption=str(config.get("pdf_encryption", ""))
             )
             logger.info("已加载AstrBot配置")
         else:
@@ -1143,6 +1148,7 @@ class JMCosmosPlugin(Star):
                         show_cover=bool(
                             astrbot_config.get("show_cover", True)
                         ),  # 添加 show_cover
+                        pdf_encryption=str(astrbot_config.get("pdf_encryption", "")),
                     )
                     logger.info("已从AstrBot配置文件加载配置")
                 except Exception as e:
@@ -1155,6 +1161,7 @@ class JMCosmosPlugin(Star):
                         max_threads=10,
                         debug_mode=False,
                         show_cover=True,  # 添加 show_cover
+                        pdf_encryption="",
                     )
                     logger.info("使用默认配置")
             else:
@@ -1201,6 +1208,7 @@ class JMCosmosPlugin(Star):
                             show_cover=bool(
                                 old_config.get("show_cover", True)
                             ),  # 添加 show_cover
+                            pdf_encryption=str(old_config.get("pdf_encryption", ""))
                         )
 
                         # 在下次使用_update_astrbot_config时会自动迁移
@@ -1215,6 +1223,7 @@ class JMCosmosPlugin(Star):
                             max_threads=10,
                             debug_mode=False,
                             show_cover=True,  # 添加 show_cover
+                            pdf_encryption="",
                         )
                         logger.info("使用默认配置")
                 else:
@@ -1226,6 +1235,7 @@ class JMCosmosPlugin(Star):
                         max_threads=10,
                         debug_mode=False,
                         show_cover=True,  # 添加 show_cover
+                        pdf_encryption="",
                     )
                     logger.info("使用默认配置")
 
@@ -1439,6 +1449,18 @@ class JMCosmosPlugin(Star):
                 logger.error(f"重命名PDF文件失败: {rename_e}")
                 yield event.plain_result(f"PDF生成后重命名失败: {rename_e}")
                 return
+            
+        # 检查PDF是否需要加密
+        logger.info("加密密码为"+self.config.pdf_encryption)
+        if self.config.pdf_encryption:
+            from PyPDF2 import PdfReader, PdfWriter
+            file = PdfReader(abs_pdf_path)
+            out = PdfWriter()
+            for page in file.pages:
+                out.add_page(page)
+            out.encrypt(self.config.pdf_encryption)
+            with open(abs_pdf_path, "wb") as f:
+                out.write(f)
 
         # 发送PDF
         yield event.plain_result(f" {comic_id} 下载完成，准备发送...")  # 添加发送提示
@@ -1855,6 +1877,7 @@ class JMCosmosPlugin(Star):
         /jmconfig domain [域名] - 添加JM漫画域名
         /jmconfig debug [on/off] - 开启/关闭调试模式
         /jmconfig cover [on/off] - 控制是否显示封面图片
+        /jmconfig encryption - PDF加密，字符串非空启用加密
         /jmconfig info - 显示当前配置信息
         /jmconfig reload - 重新加载配置文件
         /jmconfig clearcache - 清理封面缓存
@@ -1862,7 +1885,7 @@ class JMCosmosPlugin(Star):
         args = event.message_str.strip().split()
         if len(args) < 2:
             yield event.plain_result(
-                "用法:\n/jmconfig proxy [代理URL] - 设置代理URL\n/jmconfig noproxy - 清除代理设置\n/jmconfig cookie [AVS Cookie] - 设置登录Cookie\n/jmconfig threads [数量] - 设置最大下载线程数\n/jmconfig domain [域名] - 添加JM漫画域名\n/jmconfig debug [on/off] - 开启/关闭调试模式\n/jmconfig cover [on/off] - 控制是否显示封面图片\n/jmconfig info - 显示当前配置信息\n/jmconfig reload - 重新加载配置文件\n/jmconfig clearcache - 清理封面缓存"
+                "用法:\n/jmconfig proxy [代理URL] - 设置代理URL\n/jmconfig noproxy - 清除代理设置\n/jmconfig cookie [AVS Cookie] - 设置登录Cookie\n/jmconfig threads [数量] - 设置最大下载线程数\n/jmconfig domain [域名] - 添加JM漫画域名\n/jmconfig debug [on/off] - 开启/关闭调试模式\n/jmconfig cover [on/off] - 控制是否显示封面图片\n/jmconfig info - 显示当前配置信息\n/jmconfig reload - 重新加载配置文件\n/jmconfig clearcache - 清理封面缓存\n/jmconfig encryption [密码] - 配置PDF密码"
             )
             return
 
@@ -1882,6 +1905,7 @@ class JMCosmosPlugin(Star):
             threads_str = str(self.config.max_threads)
             debug_str = "开启" if self.config.debug_mode else "关闭"
             cover_str = "显示" if self.config.show_cover else "不显示"
+            encryption_str = self.config.pdf_encryption if self.config.pdf_encryption else "未设置密码"
 
             info_message = (
                 f"当前配置信息:\n"
@@ -1890,7 +1914,8 @@ class JMCosmosPlugin(Star):
                 f"Cookie: {cookie_str}\n"
                 f"最大线程数: {threads_str}\n"
                 f"调试模式: {debug_str}\n"
-                f"显示封面: {cover_str}"
+                f"显示封面: {cover_str}\n"
+                f"PDF加密密码：{encryption_str}"
             )
 
             yield event.plain_result(info_message)
@@ -1941,6 +1966,7 @@ class JMCosmosPlugin(Star):
                             show_cover=bool(
                                 astrbot_config.get("show_cover", True)
                             ),  # 添加 show_cover
+                            pdf_encryption=str(astrbot_config.get("pdf_encryption", ""))
                         )
 
                         # 更新客户端工厂
@@ -1958,6 +1984,13 @@ class JMCosmosPlugin(Star):
                 logger.error(f"重新加载配置失败: {str(e)}", exc_info=True)
                 yield event.plain_result(f"重新加载配置失败: {str(e)}")
             return
+        
+        elif action == "encryption" and len(args) >= 3:
+            encryption_str = args[2]
+            self.config.pdf_encryption = encryption_str
+            if self._update_astrbot_config("pdf_encryption", encryption_str):
+                self.client_factory.update_option()
+                yield event.plain_result(f"PDF密码已修改为: {encryption_str}")
 
         elif action == "proxy" and len(args) >= 3:
             proxy_url = args[2]

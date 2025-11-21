@@ -35,5 +35,11 @@
         "type": "bool",
         "hint": "启用调试模式后会保存更多日志信息，帮助排查问题",
         "default": false
+    },
+    "pdf_encryption": {
+        "description": "PDF加密",
+        "type": "string",
+        "hint": "PDF是否加密，字符串为空表示不加密",
+        "default": ""
     }
 } 

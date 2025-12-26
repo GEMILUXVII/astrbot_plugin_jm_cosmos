@@ -60,7 +60,7 @@ class JMCosmosPlugin(Star):
     def _check_permission(self, event: AstrMessageEvent) -> tuple[bool, str]:
         """
         检查用户权限
-        
+
         Returns:
             (是否有权限, 错误消息)
         """
@@ -83,10 +83,12 @@ class JMCosmosPlugin(Star):
         yield event.plain_result(MessageFormatter.format_help())
 
     @filter.command("jm")
-    async def download_album_command(self, event: AstrMessageEvent, album_id: str = None):
+    async def download_album_command(
+        self, event: AstrMessageEvent, album_id: str = None
+    ):
         """
         下载指定ID的漫画本子
-        
+
         用法: /jm <ID>
         示例: /jm 123456
         """
@@ -98,7 +100,9 @@ class JMCosmosPlugin(Star):
 
         # 参数检查
         if not album_id:
-            yield event.plain_result("❌ 请提供本子ID\n用法: /jm <ID>\n示例: /jm 123456")
+            yield event.plain_result(
+                "❌ 请提供本子ID\n用法: /jm <ID>\n示例: /jm 123456"
+            )
             return
 
         # 验证ID格式
@@ -121,32 +125,39 @@ class JMCosmosPlugin(Star):
             result = await self.download_manager.download_album(album_id)
 
             if not result.success:
-                yield event.plain_result(MessageFormatter.format_error(
-                    "download_failed",
-                    result.error_message
-                ))
+                yield event.plain_result(
+                    MessageFormatter.format_error(
+                        "download_failed", result.error_message
+                    )
+                )
                 return
 
             # 打包文件
             packer = JMPacker(
                 pack_format=self.config_manager.pack_format,
-                password=self.config_manager.pack_password
+                password=self.config_manager.pack_password,
             )
 
             pack_result = packer.pack(
                 source_dir=result.save_path,
-                output_name=f"JM{album_id}_{result.title[:20]}"
+                output_name=f"JM{album_id}_{result.title[:20]}",
             )
 
             # 发送结果消息
             result_msg = MessageFormatter.format_download_result(result, pack_result)
 
-            if pack_result.success and pack_result.output_path and pack_result.format != "none":
+            if (
+                pack_result.success
+                and pack_result.output_path
+                and pack_result.format != "none"
+            ):
                 # 发送打包后的文件
-                yield event.chain_result([
-                    Comp.Plain(result_msg),
-                    Comp.File.fromFileSystem(str(pack_result.output_path))
-                ])
+                yield event.chain_result(
+                    [
+                        Comp.Plain(result_msg),
+                        Comp.File.fromFileSystem(str(pack_result.output_path)),
+                    ]
+                )
 
                 # 自动清理
                 if self.config_manager.auto_delete_after_send:
@@ -159,14 +170,19 @@ class JMCosmosPlugin(Star):
             logger.error(f"下载本子失败: {e}")
             if self.debug_mode:
                 import traceback
+
                 logger.error(traceback.format_exc())
-            yield event.plain_result(MessageFormatter.format_error("download_failed", str(e)))
+            yield event.plain_result(
+                MessageFormatter.format_error("download_failed", str(e))
+            )
 
     @filter.command("jmc")
-    async def download_photo_command(self, event: AstrMessageEvent, photo_id: str = None):
+    async def download_photo_command(
+        self, event: AstrMessageEvent, photo_id: str = None
+    ):
         """
         下载指定ID的章节
-        
+
         用法: /jmc <ID>
         示例: /jmc 789012
         """
@@ -177,7 +193,9 @@ class JMCosmosPlugin(Star):
             return
 
         if not photo_id:
-            yield event.plain_result("❌ 请提供章节ID\n用法: /jmc <ID>\n示例: /jmc 789012")
+            yield event.plain_result(
+                "❌ 请提供章节ID\n用法: /jmc <ID>\n示例: /jmc 789012"
+            )
             return
 
         photo_id = photo_id.strip()
@@ -191,30 +209,36 @@ class JMCosmosPlugin(Star):
             result = await self.download_manager.download_photo(photo_id)
 
             if not result.success:
-                yield event.plain_result(MessageFormatter.format_error(
-                    "download_failed",
-                    result.error_message
-                ))
+                yield event.plain_result(
+                    MessageFormatter.format_error(
+                        "download_failed", result.error_message
+                    )
+                )
                 return
 
             # 打包
             packer = JMPacker(
                 pack_format=self.config_manager.pack_format,
-                password=self.config_manager.pack_password
+                password=self.config_manager.pack_password,
             )
 
             pack_result = packer.pack(
-                source_dir=result.save_path,
-                output_name=f"JM_photo_{photo_id}"
+                source_dir=result.save_path, output_name=f"JM_photo_{photo_id}"
             )
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
 
-            if pack_result.success and pack_result.output_path and pack_result.format != "none":
-                yield event.chain_result([
-                    Comp.Plain(result_msg),
-                    Comp.File.fromFileSystem(str(pack_result.output_path))
-                ])
+            if (
+                pack_result.success
+                and pack_result.output_path
+                and pack_result.format != "none"
+            ):
+                yield event.chain_result(
+                    [
+                        Comp.Plain(result_msg),
+                        Comp.File.fromFileSystem(str(pack_result.output_path)),
+                    ]
+                )
 
                 if self.config_manager.auto_delete_after_send:
                     JMPacker.cleanup(result.save_path)
@@ -224,13 +248,15 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"下载章节失败: {e}")
-            yield event.plain_result(MessageFormatter.format_error("download_failed", str(e)))
+            yield event.plain_result(
+                MessageFormatter.format_error("download_failed", str(e))
+            )
 
     @filter.command("jms")
     async def search_command(self, event: AstrMessageEvent, *keywords):
         """
         搜索漫画
-        
+
         用法: /jms <关键词>
         示例: /jms 标签名
         """
@@ -241,7 +267,9 @@ class JMCosmosPlugin(Star):
             return
 
         if not keywords:
-            yield event.plain_result("❌ 请提供搜索关键词\n用法: /jms <关键词>\n示例: /jms 标签名")
+            yield event.plain_result(
+                "❌ 请提供搜索关键词\n用法: /jms <关键词>\n示例: /jms 标签名"
+            )
             return
 
         keyword = " ".join(keywords).strip()
@@ -269,7 +297,7 @@ class JMCosmosPlugin(Star):
     async def info_command(self, event: AstrMessageEvent, album_id: str = None):
         """
         查看本子详情
-        
+
         用法: /jmi <ID>
         示例: /jmi 123456
         """
@@ -280,7 +308,9 @@ class JMCosmosPlugin(Star):
             return
 
         if not album_id:
-            yield event.plain_result("❌ 请提供本子ID\n用法: /jmi <ID>\n示例: /jmi 123456")
+            yield event.plain_result(
+                "❌ 请提供本子ID\n用法: /jmi <ID>\n示例: /jmi 123456"
+            )
             return
 
         album_id = album_id.strip()

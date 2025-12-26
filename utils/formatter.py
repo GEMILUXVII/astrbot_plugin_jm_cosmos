@@ -3,7 +3,6 @@
 """
 
 
-
 class MessageFormatter:
     """消息格式化器"""
 
@@ -11,10 +10,10 @@ class MessageFormatter:
     def format_album_info(album: dict) -> str:
         """
         格式化本子信息
-        
+
         Args:
             album: 本子信息字典
-            
+
         Returns:
             格式化后的字符串
         """
@@ -57,12 +56,12 @@ class MessageFormatter:
     def format_search_results(results: list[dict], keyword: str, page: int = 1) -> str:
         """
         格式化搜索结果
-        
+
         Args:
             results: 搜索结果列表
             keyword: 搜索关键词
             page: 当前页码
-            
+
         Returns:
             格式化后的字符串
         """
@@ -101,11 +100,11 @@ class MessageFormatter:
     def format_download_result(result, pack_result=None) -> str:
         """
         格式化下载结果
-        
+
         Args:
             result: DownloadResult 实例
             pack_result: PackResult 实例（可选）
-            
+
         Returns:
             格式化后的字符串
         """
@@ -125,7 +124,7 @@ class MessageFormatter:
             format_name = {
                 "zip": "ZIP压缩包",
                 "pdf": "PDF文档",
-                "none": "原始文件夹"
+                "none": "原始文件夹",
             }.get(pack_result.format, pack_result.format)
 
             lines.append(f"📦 格式: {format_name}")
@@ -141,12 +140,12 @@ class MessageFormatter:
     def format_download_progress(status: str, current: int, total: int) -> str:
         """
         格式化下载进度
-        
+
         Args:
             status: 状态描述
             current: 当前进度
             total: 总数
-            
+
         Returns:
             格式化后的字符串
         """
@@ -163,7 +162,7 @@ class MessageFormatter:
     def format_help() -> str:
         """
         格式化帮助信息
-        
+
         Returns:
             帮助信息字符串
         """
@@ -189,11 +188,11 @@ class MessageFormatter:
     def format_error(error_type: str, detail: str = "") -> str:
         """
         格式化错误信息
-        
+
         Args:
             error_type: 错误类型
             detail: 详细信息
-            
+
         Returns:
             格式化后的错误信息
         """

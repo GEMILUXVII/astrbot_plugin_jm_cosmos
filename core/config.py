@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import jmcomic
     from jmcomic import JmModuleConfig, JmOption
+
     JMCOMIC_AVAILABLE = True
 except ImportError:
     JMCOMIC_AVAILABLE = False
@@ -21,7 +21,7 @@ class JMConfigManager:
     def __init__(self, plugin_config: dict[str, Any], data_dir: Path):
         """
         初始化配置管理器
-        
+
         Args:
             plugin_config: AstrBot插件配置
             data_dir: 插件数据目录
@@ -100,9 +100,7 @@ class JMConfigManager:
     def admin_list(self) -> set:
         """管理员列表"""
         admin_str = self.plugin_config.get("admin_list", "")
-        if not admin_str:
-            return set()
-        return set(a.strip() for a in admin_str.split(",") if a.strip())
+        return {a.strip() for a in admin_str.split(",") if a.strip()}
 
     @property
     def enabled_groups(self) -> set:
@@ -110,7 +108,7 @@ class JMConfigManager:
         groups_str = self.plugin_config.get("enabled_groups", "")
         if not groups_str:
             return set()  # 空集合表示所有群都启用
-        return set(g.strip() for g in groups_str.split(",") if g.strip())
+        return {g.strip() for g in groups_str.split(",") if g.strip()}
 
     @property
     def search_page_size(self) -> int:
@@ -137,7 +135,7 @@ class JMConfigManager:
     def create_jm_option(self) -> JmOption | None:
         """
         创建 JmOption 配置对象
-        
+
         Returns:
             JmOption 实例，如果jmcomic未安装则返回None
         """
@@ -149,30 +147,21 @@ class JMConfigManager:
 
         # 构建配置字典
         option_dict = {
-            "dir_rule": {
-                "base_dir": str(self.download_dir),
-                "rule": "Bd/Atitle"
-            },
+            "dir_rule": {"base_dir": str(self.download_dir), "rule": "Bd/Atitle"},
             "download": {
-                "image": {
-                    "suffix": self.image_suffix
-                },
+                "image": {"suffix": self.image_suffix},
                 "threading": {
                     "photo": self.max_concurrent_photos,
-                    "image": self.max_concurrent_images
-                }
+                    "image": self.max_concurrent_images,
+                },
             },
-            "client": {
-                "impl": self.client_type
-            }
+            "client": {"impl": self.client_type},
         }
 
         # 添加代理配置
         if self.use_proxy and self.proxy_url:
             option_dict["client"]["postman"] = {
-                "meta_data": {
-                    "proxies": self.proxy_url
-                }
+                "meta_data": {"proxies": self.proxy_url}
             }
 
         # 使用字典构建 JmOption

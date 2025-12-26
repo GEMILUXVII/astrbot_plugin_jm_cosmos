@@ -13,10 +13,10 @@ try:
     from jmcomic import (
         JmAlbumDetail,
         JmcomicText,
-        JmDownloader,
         JmOption,
         JmPhotoDetail,
     )
+
     JMCOMIC_AVAILABLE = True
 except ImportError:
     JMCOMIC_AVAILABLE = False
@@ -29,6 +29,7 @@ from .config import JMConfigManager
 @dataclass
 class DownloadResult:
     """下载结果"""
+
     success: bool
     album_id: str
     title: str
@@ -46,7 +47,7 @@ class JMDownloadManager:
     def __init__(self, config_manager: JMConfigManager):
         """
         初始化下载管理器
-        
+
         Args:
             config_manager: 配置管理器实例
         """
@@ -56,15 +57,15 @@ class JMDownloadManager:
     async def download_album(
         self,
         album_id: str,
-        progress_callback: Callable[[str, int, int], Any] | None = None
+        progress_callback: Callable[[str, int, int], Any] | None = None,
     ) -> DownloadResult:
         """
         异步下载本子
-        
+
         Args:
             album_id: 本子ID
             progress_callback: 进度回调函数 (status, current, total)
-            
+
         Returns:
             DownloadResult 下载结果
         """
@@ -77,7 +78,7 @@ class JMDownloadManager:
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message="jmcomic 库未安装"
+                error_message="jmcomic 库未安装",
             )
 
         try:
@@ -92,15 +93,12 @@ class JMDownloadManager:
                     photo_count=0,
                     image_count=0,
                     save_path=Path(),
-                    error_message="无法创建下载配置"
+                    error_message="无法创建下载配置",
                 )
 
             # 在线程池中执行同步下载
             result = await asyncio.to_thread(
-                self._download_album_sync,
-                album_id,
-                option,
-                progress_callback
+                self._download_album_sync, album_id, option, progress_callback
             )
             return result
 
@@ -113,14 +111,11 @@ class JMDownloadManager:
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e)
+                error_message=str(e),
             )
 
     def _download_album_sync(
-        self,
-        album_id: str,
-        option: JmOption,
-        progress_callback: Callable | None = None
+        self, album_id: str, option: JmOption, progress_callback: Callable | None = None
     ) -> DownloadResult:
         """同步下载本子（在线程池中执行）"""
         try:
@@ -143,8 +138,7 @@ class JMDownloadManager:
 
             # 统计图片数量
             total_images = sum(
-                len(photo.images) if hasattr(photo, "images") else 0
-                for photo in album
+                len(photo.images) if hasattr(photo, "images") else 0 for photo in album
             )
 
             return DownloadResult(
@@ -155,7 +149,7 @@ class JMDownloadManager:
                 photo_count=album.photo_count,
                 image_count=total_images,
                 save_path=save_path,
-                cover_path=cover_path
+                cover_path=cover_path,
             )
 
         except Exception as e:
@@ -167,21 +161,21 @@ class JMDownloadManager:
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e)
+                error_message=str(e),
             )
 
     async def download_photo(
         self,
         photo_id: str,
-        progress_callback: Callable[[str, int, int], Any] | None = None
+        progress_callback: Callable[[str, int, int], Any] | None = None,
     ) -> DownloadResult:
         """
         异步下载章节
-        
+
         Args:
             photo_id: 章节ID
             progress_callback: 进度回调函数
-            
+
         Returns:
             DownloadResult 下载结果
         """
@@ -194,7 +188,7 @@ class JMDownloadManager:
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message="jmcomic 库未安装"
+                error_message="jmcomic 库未安装",
             )
 
         try:
@@ -208,13 +202,11 @@ class JMDownloadManager:
                     photo_count=0,
                     image_count=0,
                     save_path=Path(),
-                    error_message="无法创建下载配置"
+                    error_message="无法创建下载配置",
                 )
 
             result = await asyncio.to_thread(
-                self._download_photo_sync,
-                photo_id,
-                option
+                self._download_photo_sync, photo_id, option
             )
             return result
 
@@ -227,7 +219,7 @@ class JMDownloadManager:
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e)
+                error_message=str(e),
             )
 
     def _download_photo_sync(self, photo_id: str, option: JmOption) -> DownloadResult:
@@ -244,12 +236,14 @@ class JMDownloadManager:
 
             return DownloadResult(
                 success=True,
-                album_id=str(photo.album_id) if hasattr(photo, "album_id") else photo_id,
+                album_id=str(photo.album_id)
+                if hasattr(photo, "album_id")
+                else photo_id,
                 title=photo.title if hasattr(photo, "title") else "",
                 author="",
                 photo_count=1,
                 image_count=image_count,
-                save_path=save_path
+                save_path=save_path,
             )
 
         except Exception as e:
@@ -261,16 +255,16 @@ class JMDownloadManager:
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e)
+                error_message=str(e),
             )
 
     async def get_album_detail(self, album_id: str) -> dict | None:
         """
         获取本子详情
-        
+
         Args:
             album_id: 本子ID
-            
+
         Returns:
             本子详情字典
         """
@@ -283,9 +277,7 @@ class JMDownloadManager:
                 return None
 
             result = await asyncio.to_thread(
-                self._get_album_detail_sync,
-                album_id,
-                option
+                self._get_album_detail_sync, album_id, option
             )
             return result
         except Exception:
@@ -305,8 +297,12 @@ class JMDownloadManager:
                 "tags": album.tags if hasattr(album, "tags") else [],
                 "photo_count": album.photo_count,
                 "pub_date": str(album.pub_date) if hasattr(album, "pub_date") else "",
-                "update_date": str(album.update_date) if hasattr(album, "update_date") else "",
-                "description": album.description if hasattr(album, "description") else "",
+                "update_date": str(album.update_date)
+                if hasattr(album, "update_date")
+                else "",
+                "description": album.description
+                if hasattr(album, "description")
+                else "",
                 "likes": album.likes if hasattr(album, "likes") else 0,
                 "views": album.views if hasattr(album, "views") else 0,
             }
@@ -316,11 +312,11 @@ class JMDownloadManager:
     async def search_albums(self, keyword: str, page: int = 1) -> list[dict]:
         """
         搜索本子
-        
+
         Args:
             keyword: 搜索关键词
             page: 页码
-            
+
         Returns:
             搜索结果列表
         """
@@ -333,16 +329,15 @@ class JMDownloadManager:
                 return []
 
             result = await asyncio.to_thread(
-                self._search_albums_sync,
-                keyword,
-                page,
-                option
+                self._search_albums_sync, keyword, page, option
             )
             return result
         except Exception:
             return []
 
-    def _search_albums_sync(self, keyword: str, page: int, option: JmOption) -> list[dict]:
+    def _search_albums_sync(
+        self, keyword: str, page: int, option: JmOption
+    ) -> list[dict]:
         """同步搜索本子"""
         try:
             client = option.build_jm_client()
@@ -350,13 +345,17 @@ class JMDownloadManager:
 
             results = []
             for album in search_page:
-                results.append({
-                    "id": album.id,
-                    "title": album.title,
-                    "author": album.author if hasattr(album, "author") else "",
-                    "tags": album.tags if hasattr(album, "tags") else [],
-                    "category": album.category if hasattr(album, "category") else "",
-                })
+                results.append(
+                    {
+                        "id": album.id,
+                        "title": album.title,
+                        "author": album.author if hasattr(album, "author") else "",
+                        "tags": album.tags if hasattr(album, "tags") else [],
+                        "category": album.category
+                        if hasattr(album, "category")
+                        else "",
+                    }
+                )
             return results
         except Exception:
             return []

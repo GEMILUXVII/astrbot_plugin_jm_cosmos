@@ -1,0 +1,112 @@
+{
+  "download_dir": {
+    "type": "string",
+    "description": "漫画下载目录",
+    "hint": "下载的漫画将保存到此目录，可使用相对路径或绝对路径",
+    "default": "./downloads"
+  },
+  "image_suffix": {
+    "type": "string",
+    "description": "图片格式",
+    "hint": "下载图片的格式转换",
+    "default": ".jpg",
+    "options": [
+      ".jpg",
+      ".png",
+      ".webp"
+    ]
+  },
+  "client_type": {
+    "type": "string",
+    "description": "客户端类型",
+    "hint": "app模式兼容性好不限IP，web模式效率高但限制IP地区",
+    "default": "app",
+    "options": [
+      "app",
+      "web"
+    ]
+  },
+  "use_proxy": {
+    "type": "bool",
+    "description": "是否使用代理",
+    "hint": "某些地区可能需要代理才能访问JM网站",
+    "default": false
+  },
+  "proxy_url": {
+    "type": "string",
+    "description": "代理服务器地址",
+    "hint": "格式: http://host:port 或 socks5://host:port",
+    "default": ""
+  },
+  "max_concurrent_photos": {
+    "type": "int",
+    "description": "最大并发章节数",
+    "hint": "同时下载的章节数量，建议3-5",
+    "default": 3
+  },
+  "max_concurrent_images": {
+    "type": "int",
+    "description": "最大并发图片数",
+    "hint": "每个章节同时下载的图片数量，建议5-10",
+    "default": 5
+  },
+  "pack_format": {
+    "type": "string",
+    "description": "打包格式",
+    "hint": "下载完成后的打包格式",
+    "default": "zip",
+    "options": [
+      "zip",
+      "pdf",
+      "none"
+    ]
+  },
+  "pack_password": {
+    "type": "string",
+    "description": "打包密码",
+    "hint": "为ZIP或PDF设置密码，留空则不加密",
+    "default": ""
+  },
+  "auto_delete_after_send": {
+    "type": "bool",
+    "description": "发送后自动删除",
+    "hint": "发送文件后是否自动删除本地文件以节省空间",
+    "default": true
+  },
+  "send_cover_preview": {
+    "type": "bool",
+    "description": "发送封面预览",
+    "hint": "下载前是否发送漫画封面图片预览",
+    "default": true
+  },
+  "enabled_groups": {
+    "type": "string",
+    "description": "启用的群列表",
+    "hint": "以逗号分隔的群号列表，留空则所有群都启用",
+    "default": ""
+  },
+  "admin_only": {
+    "type": "bool",
+    "description": "仅管理员可用",
+    "hint": "开启后只有管理员列表中的用户才能使用插件",
+    "default": false
+  },
+  "admin_list": {
+    "type": "string",
+    "description": "管理员用户ID列表",
+    "hint": "以逗号分隔的用户ID列表，这些用户拥有管理员权限",
+    "default": ""
+  },
+  "search_page_size": {
+    "type": "int",
+    "description": "搜索结果每页数量",
+    "hint": "每次搜索返回的结果数量",
+    "default": 5
+  },
+  "debug_mode": {
+    "type": "bool",
+    "description": "调试模式",
+    "hint": "开启后会输出详细的调试日志",
+    "default": false
+  }
+}

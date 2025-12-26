@@ -1,6 +1,12 @@
+<div align="center">
+  <img src="LOGO.png" alt="AstrBot JM-Cosmos Plugin Logo" width="160" />
+</div>
+
 # <div align="center">JM-Cosmos</div>
 
-<div align="center"><em>全能型 JM 漫画下载与管理工具</em></div>
+<div align="center">
+  <strong>全能型 JM 漫画下载与管理工具</strong>
+</div>
 
 <br>
 <div align="center">
@@ -22,8 +28,8 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 
 **v2.0.0 是完全重构的版本**，采用模块化架构设计，代码更清晰、更易维护，并新增了多项实用功能。
 
-> [!CAUTION]
-> **从 v1.x 升级到 v2.x 的用户请注意：**
+> [!CAUTION] > **从 v1.x 升级到 v2.x 的用户请注意：**
+>
 > - v2.x 与 v1.x **不兼容**，配置项和命令均有变更
 > - 升级前请**删除旧插件目录**，然后安装新版本
 > - 升级后需在管理面板**重新配置所有选项**
@@ -63,11 +69,11 @@ pip install -r requirements.txt
 
 **必须安装的依赖：**
 
-| 依赖 | 用途 |
-|-----|------|
+| 依赖              | 用途              |
+| ----------------- | ----------------- |
 | `jmcomic>=2.6.10` | JM 漫画下载核心库 |
-| `pymupdf>=1.23.0` | PDF 打包支持 |
-| `pyzipper>=0.3.6` | 加密 ZIP 支持 |
+| `pymupdf>=1.23.0` | PDF 打包支持      |
+| `pyzipper>=0.3.6` | 加密 ZIP 支持     |
 
 > [!WARNING]
 > 如果不安装 `pyzipper`，默认可发送 zip 文件，但 ZIP 文件将**无法加密**！
@@ -82,34 +88,34 @@ pip install -r requirements.txt
 
 ## 命令列表
 
-| 命令 | 说明 | 示例 |
-|------|------|------|
-| `/jm <ID>` | 下载指定 ID 的本子 | `/jm 123456` |
-| `/jmc <ID>` | 下载指定 ID 的章节 | `/jmc 789012` |
-| `/jms <关键词>` | 搜索漫画 | `/jms 标签名` |
-| `/jmi <ID>` | 查看本子详情 | `/jmi 123456` |
-| `/jmhelp` | 查看帮助信息 | `/jmhelp` |
+| 命令            | 说明               | 示例          |
+| --------------- | ------------------ | ------------- |
+| `/jm <ID>`      | 下载指定 ID 的本子 | `/jm 123456`  |
+| `/jmc <ID>`     | 下载指定 ID 的章节 | `/jmc 789012` |
+| `/jms <关键词>` | 搜索漫画           | `/jms 标签名` |
+| `/jmi <ID>`     | 查看本子详情       | `/jmi 123456` |
+| `/jmhelp`       | 查看帮助信息       | `/jmhelp`     |
 
 ## 配置说明
 
 所有配置可在 AstrBot 管理面板中修改：
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `download_dir` | 漫画下载目录 | `./downloads` |
-| `image_suffix` | 图片格式 (.jpg/.png/.webp) | `.jpg` |
-| `client_type` | 客户端类型 (api/html) | `api` |
-| `use_proxy` | 是否使用代理 | `false` |
-| `proxy_url` | 代理服务器地址 | 空 |
-| `pack_format` | 打包格式 (zip/pdf/none) | `zip` |
-| `pack_password` | 打包密码（留空则不加密） | 空 |
-| `auto_delete_after_send` | 发送后自动删除 | `true` |
-| `send_cover_preview` | 发送封面预览 | `true` |
-| `enabled_groups` | 启用的群列表（逗号分隔） | 空（全部启用） |
-| `admin_only` | 仅管理员可用 | `false` |
-| `admin_list` | 管理员用户 ID 列表 | 空 |
-| `search_page_size` | 搜索结果数量 | `5` |
-| `debug_mode` | 调试模式 | `false` |
+| 配置项                   | 说明                       | 默认值         |
+| ------------------------ | -------------------------- | -------------- |
+| `download_dir`           | 漫画下载目录               | `./downloads`  |
+| `image_suffix`           | 图片格式 (.jpg/.png/.webp) | `.jpg`         |
+| `client_type`            | 客户端类型 (api/html)      | `api`          |
+| `use_proxy`              | 是否使用代理               | `false`        |
+| `proxy_url`              | 代理服务器地址             | 空             |
+| `pack_format`            | 打包格式 (zip/pdf/none)    | `zip`          |
+| `pack_password`          | 打包密码（留空则不加密）   | 空             |
+| `auto_delete_after_send` | 发送后自动删除             | `true`         |
+| `send_cover_preview`     | 发送封面预览               | `true`         |
+| `enabled_groups`         | 启用的群列表（逗号分隔）   | 空（全部启用） |
+| `admin_only`             | 仅管理员可用               | `false`        |
+| `admin_list`             | 管理员用户 ID 列表         | 空             |
+| `search_page_size`       | 搜索结果数量               | `5`            |
+| `debug_mode`             | 调试模式                   | `false`        |
 
 ## 文件结构
 
@@ -134,6 +140,7 @@ jm_cosmos2/
 ### Q: ZIP 文件没有加密？
 
 **A:** 请确保已安装 `pyzipper` 库：
+
 ```bash
 pip install pyzipper
 ```
@@ -145,6 +152,7 @@ pip install pyzipper
 ### Q: 403 错误或 IP 被禁止访问？
 
 **A:** 启用代理功能并配置代理地址：
+
 ```
 use_proxy: true
 proxy_url: http://127.0.0.1:7890
@@ -173,19 +181,19 @@ proxy_url: http://127.0.0.1:7890
 
 ### 提交类型
 
-| 类型 | 说明 |
-|------|------|
-| `feat` | 新功能 |
-| `fix` | Bug 修复 |
-| `docs` | 文档变更 |
-| `style` | 代码格式调整（空格、分号等，不影响逻辑） |
-| `refactor` | 代码重构（既非新功能也非 Bug 修复） |
-| `perf` | 性能优化 |
-| `test` | 添加或修正测试 |
-| `chore` | 构建过程或辅助工具的变动 |
-| `revert` | 回滚提交 |
-| `ci` | CI/CD 相关变更 |
-| `build` | 构建系统变更 |
+| 类型       | 说明                                     |
+| ---------- | ---------------------------------------- |
+| `feat`     | 新功能                                   |
+| `fix`      | Bug 修复                                 |
+| `docs`     | 文档变更                                 |
+| `style`    | 代码格式调整（空格、分号等，不影响逻辑） |
+| `refactor` | 代码重构（既非新功能也非 Bug 修复）      |
+| `perf`     | 性能优化                                 |
+| `test`     | 添加或修正测试                           |
+| `chore`    | 构建过程或辅助工具的变动                 |
+| `revert`   | 回滚提交                                 |
+| `ci`       | CI/CD 相关变更                           |
+| `build`    | 构建系统变更                             |
 
 ### 提交格式
 
@@ -196,6 +204,7 @@ proxy_url: http://127.0.0.1:7890
 ```
 
 示例：
+
 ```
 feat: 新增加密 ZIP 打包功能
 fix: 修复客户端类型配置错误
@@ -213,7 +222,6 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 
 ## 致谢
 

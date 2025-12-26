@@ -1,0 +1,64 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name (e.g. v2.0.1)"
+        required: true
+        default: "v2.0.1"
+
+env:
+  ARCHIVE_PREFIX: astrbot_plugin_jm_cosmos
+
+jobs:
+  build-and-release:
+    name: Publish tagged release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Determine tag
+        id: prep
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            REF="refs/tags/${TAG}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            REF="${GITHUB_REF}"
+          fi
+          echo "tag_name=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "archive_name=${ARCHIVE_PREFIX}-${TAG}.zip" >> "$GITHUB_OUTPUT"
+          echo "checkout_ref=${REF}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.prep.outputs.checkout_ref }}
+
+      - name: Build release archive
+        env:
+          ARCHIVE_NAME: ${{ steps.prep.outputs.archive_name }}
+        run: |
+          zip -r "$ARCHIVE_NAME" . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x ".venv/*" \
+            -x "__pycache__/*" \
+            -x "*.pyc" \
+            -x ".ruff_cache/*" \
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.tag_name }}
+          name: JM-Cosmos ${{ steps.prep.outputs.tag_name }}
+          files: ${{ steps.prep.outputs.archive_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

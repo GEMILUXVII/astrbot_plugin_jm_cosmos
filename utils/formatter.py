@@ -2,12 +2,11 @@
 消息格式化工具
 """
 
-from typing import List, Optional
 
 
 class MessageFormatter:
     """消息格式化器"""
-    
+
     @staticmethod
     def format_album_info(album: dict) -> str:
         """
@@ -21,41 +20,41 @@ class MessageFormatter:
         """
         lines = [
             f"📖 {album.get('title', '未知标题')}",
-            f"━━━━━━━━━━━━━━━━━━━━━",
+            "━━━━━━━━━━━━━━━━━━━━━",
             f"🆔 ID: {album.get('id', 'N/A')}",
             f"✍️ 作者: {album.get('author', '未知')}",
             f"📚 章节数: {album.get('photo_count', 0)}",
         ]
-        
-        if album.get('tags'):
-            tags = album['tags'][:5]  # 最多显示5个标签
+
+        if album.get("tags"):
+            tags = album["tags"][:5]  # 最多显示5个标签
             lines.append(f"🏷️ 标签: {', '.join(tags)}")
-        
-        if album.get('pub_date'):
+
+        if album.get("pub_date"):
             lines.append(f"📅 发布: {album['pub_date']}")
-        
-        if album.get('update_date'):
+
+        if album.get("update_date"):
             lines.append(f"🔄 更新: {album['update_date']}")
-        
-        if album.get('likes'):
+
+        if album.get("likes"):
             lines.append(f"❤️ 点赞: {album['likes']}")
-        
-        if album.get('views'):
+
+        if album.get("views"):
             lines.append(f"👁️ 浏览: {album['views']}")
-        
-        if album.get('description'):
-            desc = album['description'][:100]
-            if len(album['description']) > 100:
+
+        if album.get("description"):
+            desc = album["description"][:100]
+            if len(album["description"]) > 100:
                 desc += "..."
             lines.append(f"📝 简介: {desc}")
-        
+
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
         lines.append("💡 使用 /jm <ID> 下载此本子")
-        
+
         return "\n".join(lines)
-    
+
     @staticmethod
-    def format_search_results(results: List[dict], keyword: str, page: int = 1) -> str:
+    def format_search_results(results: list[dict], keyword: str, page: int = 1) -> str:
         """
         格式化搜索结果
         
@@ -68,36 +67,36 @@ class MessageFormatter:
             格式化后的字符串
         """
         if not results:
-            return f"🔍 未找到与 \"{keyword}\" 相关的结果"
-        
+            return f'🔍 未找到与 "{keyword}" 相关的结果'
+
         lines = [
             f"🔍 搜索: {keyword} (第{page}页)",
             "━━━━━━━━━━━━━━━━━━━━━",
         ]
-        
+
         for i, album in enumerate(results, 1):
-            title = album.get('title', '未知标题')
+            title = album.get("title", "未知标题")
             if len(title) > 30:
                 title = title[:27] + "..."
-            
-            author = album.get('author', '未知')
-            album_id = album.get('id', 'N/A')
-            
+
+            author = album.get("author", "未知")
+            album_id = album.get("id", "N/A")
+
             lines.append(f"{i}. 【{album_id}】{title}")
             lines.append(f"   ✍️ {author}")
-            
-            if album.get('tags'):
-                tags = album['tags'][:3]
+
+            if album.get("tags"):
+                tags = album["tags"][:3]
                 lines.append(f"   🏷️ {', '.join(tags)}")
-            
+
             lines.append("")
-        
+
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
         lines.append("💡 使用 /jmi <ID> 查看详情")
         lines.append("💡 使用 /jm <ID> 直接下载")
-        
+
         return "\n".join(lines)
-    
+
     @staticmethod
     def format_download_result(result, pack_result=None) -> str:
         """
@@ -112,7 +111,7 @@ class MessageFormatter:
         """
         if not result.success:
             return f"❌ 下载失败\n原因: {result.error_message}"
-        
+
         lines = [
             "✅ 下载完成！",
             "━━━━━━━━━━━━━━━━━━━━━",
@@ -121,23 +120,23 @@ class MessageFormatter:
             f"📚 章节: {result.photo_count}",
             f"🖼️ 图片: {result.image_count}",
         ]
-        
+
         if pack_result and pack_result.success:
             format_name = {
                 "zip": "ZIP压缩包",
                 "pdf": "PDF文档",
                 "none": "原始文件夹"
             }.get(pack_result.format, pack_result.format)
-            
+
             lines.append(f"📦 格式: {format_name}")
-            
+
             if pack_result.encrypted:
                 lines.append("🔐 已加密")
-        
+
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
-        
+
         return "\n".join(lines)
-    
+
     @staticmethod
     def format_download_progress(status: str, current: int, total: int) -> str:
         """
@@ -159,7 +158,7 @@ class MessageFormatter:
             return f"⏳ {status}\n[{bar}] {percent}% ({current}/{total})"
         else:
             return f"⏳ {status}..."
-    
+
     @staticmethod
     def format_help() -> str:
         """
@@ -185,7 +184,7 @@ class MessageFormatter:
 【说明】
 • 下载的文件将自动打包发送
 • 支持群聊和私聊使用"""
-    
+
     @staticmethod
     def format_error(error_type: str, detail: str = "") -> str:
         """
@@ -207,7 +206,7 @@ class MessageFormatter:
             "download_failed": "❌ 下载失败",
             "pack_failed": "❌ 打包失败",
         }
-        
+
         msg = error_messages.get(error_type, f"❌ 发生错误: {error_type}")
         if detail:
             msg += f"\n详情: {detail}"

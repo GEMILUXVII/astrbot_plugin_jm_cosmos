@@ -2,6 +2,17 @@
 
 所有版本更新记录。
 
+## **v2.0.1** (2025-12-26)
+
+### Bug 修复
+- 修复 `JmAlbumDetail` 属性访问错误，使用 `len(album)` 获取章节数
+- 修复 `client_type` 配置错误，正确映射为 `api`/`html`
+- 修复 `Comp.File` 文件发送方式
+- 修复搜索命令参数处理，支持 AstrBot 参数格式
+- 修复搜索 API 调用，使用 `search_site` 和 `iter_id_title_tag`
+
+---
+
 ## **v2.0.0** (2025-12-26) - 重大重构
 
 ### 架构重构

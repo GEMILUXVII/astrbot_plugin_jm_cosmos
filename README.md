@@ -22,6 +22,13 @@ JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画
 
 **v2.0.0 是完全重构的版本**，采用模块化架构设计，代码更清晰、更易维护，并新增了多项实用功能。
 
+> [!CAUTION]
+> **从 v1.x 升级到 v2.x 的用户请注意：**
+> - v2.x 与 v1.x **不兼容**，配置项和命令均有变更
+> - 升级前请**删除旧插件目录**，然后安装新版本
+> - 升级后需在管理面板**重新配置所有选项**
+> - 部分命令已移除（`/jmimg`, `/jmpdf`, `/jmconfig`, `/jmdomain`, `/jmauthor`, `/jmrecommend`）
+
 ## 功能特性
 
 ### 核心功能
@@ -58,11 +65,14 @@ pip install -r requirements.txt
 
 | 依赖 | 用途 |
 |-----|------|
-| `jmcomic>=2.5.0` | JM 漫画下载核心库 |
+| `jmcomic>=2.6.10` | JM 漫画下载核心库 |
 | `pymupdf>=1.23.0` | PDF 打包支持 |
 | `pyzipper>=0.3.6` | 加密 ZIP 支持 |
 
 > **注意**：如果不安装 `pyzipper`，ZIP 文件将**无法加密**！
+
+> [!WARNING]
+> 如果不安装 `pyzipper`，默认可发送 zip 文件，但 ZIP 文件将**无法加密**！
 
 ### 3. 重启 AstrBot
 
@@ -211,7 +221,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 本项目基于或参考了以下开源项目:
 
-- [AstrBot](https://github.com/Soulter/AstrBot) - 机器人框架
+- [AstrBot](https://github.com/AstrBotDevs/AstrBot) - 机器人框架
 - [JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) - JMComic 库
 - [pyzipper](https://github.com/danifus/pyzipper) - 加密 ZIP 库
 - [pymupdf](https://pymupdf.readthedocs.io/) - PDF 处理库

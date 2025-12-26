@@ -155,7 +155,7 @@ class JMCosmosPlugin(Star):
                 yield event.chain_result(
                     [
                         Comp.Plain(result_msg),
-                        Comp.File.fromFileSystem(str(pack_result.output_path)),
+                        Comp.File(name=pack_result.output_path.name, file=str(pack_result.output_path)),
                     ]
                 )
 
@@ -236,7 +236,7 @@ class JMCosmosPlugin(Star):
                 yield event.chain_result(
                     [
                         Comp.Plain(result_msg),
-                        Comp.File.fromFileSystem(str(pack_result.output_path)),
+                        Comp.File(name=pack_result.output_path.name, file=str(pack_result.output_path)),
                     ]
                 )
 

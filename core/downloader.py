@@ -339,16 +339,15 @@ class JMDownloadManager:
             search_page = client.search_site(keyword, page)
 
             results = []
-            for album in search_page:
+            # JmSearchPage 迭代返回的是 (album_id, title, tags) 元组
+            for album_id, title, tags in search_page.iter_id_title_tag():
                 results.append(
                     {
-                        "id": album.id,
-                        "title": album.title,
-                        "author": album.author if hasattr(album, "author") else "",
-                        "tags": album.tags if hasattr(album, "tags") else [],
-                        "category": album.category
-                        if hasattr(album, "category")
-                        else "",
+                        "id": album_id,
+                        "title": title,
+                        "author": "",  # 搜索结果不包含作者信息
+                        "tags": tags,
+                        "category": "",
                     }
                 )
             return results

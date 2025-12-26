@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="LOGO.png" alt="AstrBot JM-Cosmos Plugin Logo" width="160" />
+  <img src="logo.png" alt="AstrBot JM-Cosmos Plugin Logo" width="160" />
 </div>
 
 # <div align="center">JM-Cosmos</div>

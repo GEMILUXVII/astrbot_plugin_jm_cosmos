@@ -335,7 +335,8 @@ class JMDownloadManager:
         """同步搜索本子"""
         try:
             client = option.build_jm_client()
-            search_page = client.search_album(keyword, page)
+            # 使用 search_site 进行站内搜索
+            search_page = client.search_site(keyword, page)
 
             results = []
             for album in search_page:
@@ -351,5 +352,8 @@ class JMDownloadManager:
                     }
                 )
             return results
-        except Exception:
+        except Exception as e:
+            from astrbot.api import logger
+
+            logger.error(f"搜索失败: {e}")
             return []

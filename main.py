@@ -155,7 +155,10 @@ class JMCosmosPlugin(Star):
                 yield event.chain_result(
                     [
                         Comp.Plain(result_msg),
-                        Comp.File(name=pack_result.output_path.name, file=str(pack_result.output_path)),
+                        Comp.File(
+                            name=pack_result.output_path.name,
+                            file=str(pack_result.output_path),
+                        ),
                     ]
                 )
 
@@ -236,7 +239,10 @@ class JMCosmosPlugin(Star):
                 yield event.chain_result(
                     [
                         Comp.Plain(result_msg),
-                        Comp.File(name=pack_result.output_path.name, file=str(pack_result.output_path)),
+                        Comp.File(
+                            name=pack_result.output_path.name,
+                            file=str(pack_result.output_path),
+                        ),
                     ]
                 )
 
@@ -253,7 +259,7 @@ class JMCosmosPlugin(Star):
             )
 
     @filter.command("jms")
-    async def search_command(self, event: AstrMessageEvent, *keywords):
+    async def search_command(self, event: AstrMessageEvent, keyword: str = None):
         """
         搜索漫画
 
@@ -266,13 +272,13 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(error_msg)
             return
 
-        if not keywords:
+        if keyword is None:
             yield event.plain_result(
                 "❌ 请提供搜索关键词\n用法: /jms <关键词>\n示例: /jms 标签名"
             )
             return
 
-        keyword = " ".join(keywords).strip()
+        keyword = str(keyword).strip()
         if not keyword:
             yield event.plain_result("❌ 搜索关键词不能为空")
             return

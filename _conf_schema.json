@@ -19,11 +19,11 @@
   "client_type": {
     "type": "string",
     "description": "客户端类型",
-    "hint": "app模式兼容性好不限IP，web模式效率高但限制IP地区",
-    "default": "app",
+    "hint": "api模式使用移动端API兼容性好，html模式使用网页端效率高但限制IP地区",
+    "default": "api",
     "options": [
-      "app",
-      "web"
+      "api",
+      "html"
     ]
   },
   "use_proxy": {

@@ -130,24 +130,18 @@ class JMDownloadManager:
 
             # 尝试获取封面路径
             cover_path = None
-            if album.photo_count > 0:
+            if len(album) > 0:
                 first_photo = album[0]
-                if hasattr(first_photo, "images") and len(first_photo.images) > 0:
-                    first_image = first_photo.images[0]
-                    cover_path = Path(option.decide_image_filepath(first_image))
-
-            # 统计图片数量
-            total_images = sum(
-                len(photo.images) if hasattr(photo, "images") else 0 for photo in album
-            )
+                if hasattr(first_photo, "page_arr") and len(first_photo.page_arr) > 0:
+                    cover_path = save_path
 
             return DownloadResult(
                 success=True,
                 album_id=str(album.id),
                 title=album.title,
                 author=album.author,
-                photo_count=album.photo_count,
-                image_count=total_images,
+                photo_count=len(album),
+                image_count=album.page_count,
                 save_path=save_path,
                 cover_path=cover_path,
             )
@@ -295,7 +289,7 @@ class JMDownloadManager:
                 "title": album.title,
                 "author": album.author,
                 "tags": album.tags if hasattr(album, "tags") else [],
-                "photo_count": album.photo_count,
+                "photo_count": len(album),
                 "pub_date": str(album.pub_date) if hasattr(album, "pub_date") else "",
                 "update_date": str(album.update_date)
                 if hasattr(album, "update_date")

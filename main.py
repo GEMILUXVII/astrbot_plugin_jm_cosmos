@@ -99,14 +99,14 @@ class JMCosmosPlugin(Star):
             return
 
         # 参数检查
-        if not album_id:
+        if album_id is None:
             yield event.plain_result(
                 "❌ 请提供本子ID\n用法: /jm <ID>\n示例: /jm 123456"
             )
             return
 
-        # 验证ID格式
-        album_id = album_id.strip()
+        # 转换为字符串并验证ID格式
+        album_id = str(album_id).strip()
         if not album_id.isdigit():
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return
@@ -192,13 +192,13 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(error_msg)
             return
 
-        if not photo_id:
+        if photo_id is None:
             yield event.plain_result(
                 "❌ 请提供章节ID\n用法: /jmc <ID>\n示例: /jmc 789012"
             )
             return
 
-        photo_id = photo_id.strip()
+        photo_id = str(photo_id).strip()
         if not photo_id.isdigit():
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return
@@ -307,13 +307,13 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(error_msg)
             return
 
-        if not album_id:
+        if album_id is None:
             yield event.plain_result(
                 "❌ 请提供本子ID\n用法: /jmi <ID>\n示例: /jmi 123456"
             )
             return
 
-        album_id = album_id.strip()
+        album_id = str(album_id).strip()
         if not album_id.isdigit():
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return

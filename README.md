@@ -69,8 +69,6 @@ pip install -r requirements.txt
 | `pymupdf>=1.23.0` | PDF 打包支持 |
 | `pyzipper>=0.3.6` | 加密 ZIP 支持 |
 
-> **注意**：如果不安装 `pyzipper`，ZIP 文件将**无法加密**！
-
 > [!WARNING]
 > 如果不安装 `pyzipper`，默认可发送 zip 文件，但 ZIP 文件将**无法加密**！
 

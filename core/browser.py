@@ -4,6 +4,8 @@ JMComic 浏览查询模块
 提供搜索、详情查看、排行榜等浏览功能。
 """
 
+from pathlib import Path
+
 from astrbot.api import logger
 
 try:
@@ -126,6 +128,56 @@ class JMBrowser(JMClientMixin):
             }
         except Exception as e:
             logger.error(f"获取详情失败: {e}")
+            return None
+
+    async def get_album_cover(self, album_id: str, save_dir: Path) -> Path | None:
+        """
+        下载本子封面
+
+        Args:
+            album_id: 本子ID
+            save_dir: 封面保存目录
+
+        Returns:
+            封面文件路径，失败返回 None
+        """
+        if not self.is_available():
+            return None
+
+        try:
+            option = self._get_option()
+            if option is None:
+                return None
+
+            # 确保保存目录存在
+            save_dir.mkdir(parents=True, exist_ok=True)
+
+            return await self._run_sync(
+                self._get_album_cover_sync, album_id, save_dir, option
+            )
+        except Exception as e:
+            logger.error(f"获取封面失败: {e}")
+            return None
+
+    def _get_album_cover_sync(
+        self, album_id: str, save_dir: Path, option
+    ) -> Path | None:
+        """同步下载本子封面"""
+        try:
+            client = option.build_jm_client()
+            parsed_id = JmcomicText.parse_to_jm_id(album_id)
+
+            # 封面保存路径
+            cover_path = save_dir / f"{parsed_id}.jpg"
+
+            # 下载封面
+            client.download_album_cover(parsed_id, str(cover_path))
+
+            if cover_path.exists():
+                return cover_path
+            return None
+        except Exception as e:
+            logger.error(f"下载封面失败: {e}")
             return None
 
     # ==================== 排行榜功能 ====================

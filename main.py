@@ -22,7 +22,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "1.0.0",
+    "2.4.0",
     "https://github.com/GEMILUXVII/jm_cosmos2",
 )
 class JMCosmosPlugin(Star):
@@ -121,11 +121,23 @@ class JMCosmosPlugin(Star):
             # 发送开始下载提示
             yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
 
-            # 如果配置了发送封面预览，先获取详情
+            # 如果配置了发送封面预览，先获取详情和封面
             if self.config_manager.send_cover_preview:
                 detail = await self.browser.get_album_detail(album_id)
                 if detail:
-                    yield event.plain_result(MessageFormatter.format_album_info(detail))
+                    # 获取封面图片
+                    cover_dir = self.config_manager.download_dir / "covers"
+                    cover_path = await self.browser.get_album_cover(album_id, cover_dir)
+
+                    if cover_path and cover_path.exists():
+                        yield event.chain_result(
+                            [
+                                Comp.Image(file=str(cover_path)),
+                                Comp.Plain(MessageFormatter.format_album_info(detail)),
+                            ]
+                        )
+                    else:
+                        yield event.plain_result(MessageFormatter.format_album_info(detail))
 
             # 执行下载
             result = await self.download_manager.download_album(album_id)
@@ -339,7 +351,19 @@ class JMCosmosPlugin(Star):
                 yield event.plain_result(MessageFormatter.format_error("not_found"))
                 return
 
-            yield event.plain_result(MessageFormatter.format_album_info(detail))
+            # 获取封面图片
+            cover_dir = self.config_manager.download_dir / "covers"
+            cover_path = await self.browser.get_album_cover(album_id, cover_dir)
+
+            if cover_path and cover_path.exists():
+                yield event.chain_result(
+                    [
+                        Comp.Image(file=str(cover_path)),
+                        Comp.Plain(MessageFormatter.format_album_info(detail)),
+                    ]
+                )
+            else:
+                yield event.plain_result(MessageFormatter.format_album_info(detail))
 
         except Exception as e:
             logger.error(f"获取详情失败: {e}")

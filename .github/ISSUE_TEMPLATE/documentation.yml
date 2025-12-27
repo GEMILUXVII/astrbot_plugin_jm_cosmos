@@ -1,0 +1,52 @@
+name: 文档改进
+description: 报告文档错误或建议补充
+title: "[DOCS] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你帮助改进文档！
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: 文档类型
+      options:
+        - README.md
+        - CHANGELOG.md
+        - 代码注释
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: 问题类型
+      options:
+        - 内容错误
+        - 内容过时
+        - 表述不清
+        - 缺少说明
+        - 排版问题
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: 问题位置
+      description: 指出文档中的具体位置
+      placeholder: README.md 的「配置说明」部分...
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 改进建议
+      description: 你建议如何修改？
+    validations:
+      required: false

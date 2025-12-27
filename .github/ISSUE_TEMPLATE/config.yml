@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 查看文档
+  - name: 查看文档
     url: https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos#readme
     about: 先查看 README 了解插件使用方法
-  - name: 📝 更新日志
+  - name: 更新日志
     url: https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/CHANGELOG.md
     about: 查看版本更新历史

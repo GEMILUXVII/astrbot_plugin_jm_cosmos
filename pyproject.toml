@@ -1,7 +1,11 @@
 [project]
-name = "jm-cosmos2"
-version = "0.1.0"
-description = "Add your description here"
+name = "JM-Cosmos II"
+version = "2.5.4"
+description = "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，基于jmcomic库"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "jmcomic>=2.6.10",
+    "pymupdf>=1.23.0",
+    "pyzipper>=0.3.6",
+]

@@ -22,7 +22,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.4.0",
+    "2.4.1",
     "https://github.com/GEMILUXVII/jm_cosmos2",
 )
 class JMCosmosPlugin(Star):
@@ -351,17 +351,20 @@ class JMCosmosPlugin(Star):
                 yield event.plain_result(MessageFormatter.format_error("not_found"))
                 return
 
-            # 获取封面图片
-            cover_dir = self.config_manager.download_dir / "covers"
-            cover_path = await self.browser.get_album_cover(album_id, cover_dir)
+            # 根据配置决定是否发送封面图片
+            if self.config_manager.send_cover_preview:
+                cover_dir = self.config_manager.download_dir / "covers"
+                cover_path = await self.browser.get_album_cover(album_id, cover_dir)
 
-            if cover_path and cover_path.exists():
-                yield event.chain_result(
-                    [
-                        Comp.Image(file=str(cover_path)),
-                        Comp.Plain(MessageFormatter.format_album_info(detail)),
-                    ]
-                )
+                if cover_path and cover_path.exists():
+                    yield event.chain_result(
+                        [
+                            Comp.Image(file=str(cover_path)),
+                            Comp.Plain(MessageFormatter.format_album_info(detail)),
+                        ]
+                    )
+                else:
+                    yield event.plain_result(MessageFormatter.format_album_info(detail))
             else:
                 yield event.plain_result(MessageFormatter.format_album_info(detail))
 

@@ -139,6 +139,48 @@ class MessageFormatter:
         return "\n".join(lines)
 
     @staticmethod
+    def format_favorites(albums: list[dict], folders: list[dict], page: int = 1) -> str:
+        """
+        格式化收藏夹结果
+
+        Args:
+            albums: 收藏的本子列表
+            folders: 收藏夹列表
+            page: 当前页码
+
+        Returns:
+            格式化后的字符串
+        """
+        lines = []
+        lines.append("⭐ 我的收藏")
+        lines.append(f"📄 第 {page} 页")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━")
+
+        if not albums:
+            lines.append("📭 收藏夹为空")
+        else:
+            for i, album in enumerate(albums, 1):
+                album_id = album.get("id", "")
+                title = album.get("title", "未知")
+                lines.append(f"{i}. 【{album_id}】{title}")
+
+        # 显示收藏夹列表（如果有多个）
+        if folders and len(folders) > 1:
+            lines.append("")
+            lines.append("📁 收藏夹列表:")
+            for folder in folders:
+                folder_id = folder.get("id", "")
+                folder_name = folder.get("name", "未知")
+                lines.append(f"  • [{folder_id}] {folder_name}")
+
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("💡 使用 /jmfav <页码> 翻页")
+        lines.append("💡 使用 /jmfav <页码> <收藏夹ID> 查看特定收藏夹")
+
+        return "\n".join(lines)
+
+    @staticmethod
     def format_download_result(result, pack_result=None) -> str:
         """
         格式化下载结果
@@ -222,12 +264,13 @@ class MessageFormatter:
 /jmlogin <用户名> <密码> - 登录JM账号
 /jmlogout   - 登出账号
 /jmstatus   - 查看登录状态
+/jmfav      - 查看我的收藏（需登录）
 
 【使用示例】
 /jm 123456       - 下载ID为123456的本子
 /jms 标签名      - 搜索包含该标签的漫画
 /jmrank week     - 查看周排行榜
-/jmlogin user pw - 登录账号
+/jmfav 1         - 查看收藏夹第1页
 
 【说明】
 • 下载的文件将自动打包发送

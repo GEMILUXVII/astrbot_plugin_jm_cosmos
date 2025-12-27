@@ -219,3 +219,62 @@ class JMBrowser(JMClientMixin):
         except Exception as e:
             logger.error(f"获取月排行榜失败: {e}")
             return []
+
+    # ==================== 收藏夹功能 ====================
+
+    async def get_favorites(
+        self, client, page: int = 1, folder_id: str = "0"
+    ) -> tuple[list[dict], list[dict]]:
+        """
+        获取收藏夹内容
+
+        Args:
+            client: 已登录的客户端
+            page: 页码
+            folder_id: 收藏夹ID，默认为 "0"（全部收藏）
+
+        Returns:
+            (收藏列表, 收藏夹列表)
+        """
+        if not self.is_available():
+            return [], []
+
+        try:
+            return await self._run_sync(
+                self._get_favorites_sync, client, page, folder_id
+            )
+        except Exception as e:
+            logger.error(f"获取收藏夹失败: {e}")
+            return [], []
+
+    def _get_favorites_sync(
+        self, client, page: int, folder_id: str
+    ) -> tuple[list[dict], list[dict]]:
+        """同步获取收藏夹内容"""
+        try:
+            fav_page = client.favorite_folder(page=page, folder_id=folder_id)
+
+            # 获取收藏的本子
+            albums = []
+            for album_id, title in fav_page.iter_id_title():
+                albums.append(
+                    {
+                        "id": album_id,
+                        "title": title,
+                    }
+                )
+
+            # 获取收藏夹列表
+            folders = []
+            for folder_id, folder_name in fav_page.iter_folder_id_name():
+                folders.append(
+                    {
+                        "id": folder_id,
+                        "name": folder_name,
+                    }
+                )
+
+            return albums, folders
+        except Exception as e:
+            logger.error(f"获取收藏夹失败: {e}")
+            return [], []

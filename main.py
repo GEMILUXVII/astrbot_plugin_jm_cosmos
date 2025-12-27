@@ -477,3 +477,46 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(
                 "❌ 当前未登录\n💡 使用 /jmlogin <用户名> <密码> 登录"
             )
+
+    @filter.command("jmfav")
+    async def favorites_command(
+        self, event: AstrMessageEvent, page: int = 1, folder_id: str = "0"
+    ):
+        """
+        查看我的收藏
+
+        用法: /jmfav [页码] [收藏夹ID]
+        示例: /jmfav 1
+        """
+        # 权限检查
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        # 检查登录状态
+        logged_in, login_msg = await self.auth_manager.ensure_logged_in()
+        if not logged_in:
+            yield event.plain_result(f"❌ {login_msg}\n💡 请先使用 /jmlogin 登录")
+            return
+
+        # 验证页码
+        try:
+            page = int(page)
+            if page < 1:
+                page = 1
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            yield event.plain_result(f"⭐ 正在获取收藏夹第{page}页...")
+
+            client = self.auth_manager.get_client()
+            albums, folders = await self.browser.get_favorites(client, page, folder_id)
+
+            result_msg = MessageFormatter.format_favorites(albums, folders, page)
+            yield event.plain_result(result_msg)
+
+        except Exception as e:
+            logger.error(f"获取收藏夹失败: {e}")
+            yield event.plain_result(MessageFormatter.format_error("network", str(e)))

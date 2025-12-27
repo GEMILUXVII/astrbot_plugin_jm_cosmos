@@ -108,5 +108,17 @@
     "description": "调试模式",
     "hint": "开启后会输出详细的调试日志",
     "default": false
+  },
+  "jm_username": {
+    "type": "string",
+    "description": "JM账号用户名",
+    "hint": "填写后可自动登录，解锁收藏夹等功能（可选）",
+    "default": ""
+  },
+  "jm_password": {
+    "type": "string",
+    "description": "JM账号密码",
+    "hint": "配合用户名使用，支持自动登录（可选）",
+    "default": ""
   }
 }

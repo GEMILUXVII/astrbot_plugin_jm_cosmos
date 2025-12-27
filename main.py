@@ -11,7 +11,7 @@ from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, StarTools, register
 
-from .core import JMBrowser, JMConfigManager, JMDownloadManager, JMPacker
+from .core import JMAuthManager, JMBrowser, JMConfigManager, JMDownloadManager, JMPacker
 from .utils import MessageFormatter
 
 # 插件名称常量
@@ -52,6 +52,9 @@ class JMCosmosPlugin(Star):
 
         # 初始化浏览查询器
         self.browser = JMBrowser(self.config_manager)
+
+        # 初始化认证管理器
+        self.auth_manager = JMAuthManager(self.config_manager)
 
         # 调试模式
         self.debug_mode = self.config_manager.debug_mode
@@ -395,3 +398,82 @@ class JMCosmosPlugin(Star):
         except Exception as e:
             logger.error(f"获取排行榜失败: {e}")
             yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+
+    @filter.command("jmlogin")
+    async def login_command(
+        self, event: AstrMessageEvent, username: str = None, password: str = None
+    ):
+        """
+        登录JM账号
+
+        用法: /jmlogin <用户名> <密码>
+        示例: /jmlogin myuser mypass
+        """
+        # 权限检查
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        # 参数检查
+        if username is None or password is None:
+            yield event.plain_result(
+                "❌ 请提供用户名和密码\n用法: /jmlogin <用户名> <密码>\n示例: /jmlogin myuser mypass"
+            )
+            return
+
+        try:
+            yield event.plain_result("🔐 正在登录...")
+
+            success, message = await self.auth_manager.login(username, password)
+
+            if success:
+                yield event.plain_result(f"✅ {message}")
+            else:
+                yield event.plain_result(f"❌ {message}")
+
+        except Exception as e:
+            logger.error(f"登录失败: {e}")
+            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+
+    @filter.command("jmlogout")
+    async def logout_command(self, event: AstrMessageEvent):
+        """
+        登出JM账号
+
+        用法: /jmlogout
+        """
+        # 权限检查
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        success, message = self.auth_manager.logout()
+
+        if success:
+            yield event.plain_result(f"✅ {message}")
+        else:
+            yield event.plain_result(f"❌ {message}")
+
+    @filter.command("jmstatus")
+    async def status_command(self, event: AstrMessageEvent):
+        """
+        查看登录状态
+
+        用法: /jmstatus
+        """
+        # 权限检查
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        status = self.auth_manager.get_login_status()
+
+        if status["logged_in"]:
+            yield event.plain_result(f"✅ 已登录\n👤 用户名: {status['username']}")
+        else:
+            yield event.plain_result(
+                "❌ 当前未登录\n💡 使用 /jmlogin <用户名> <密码> 登录"
+            )

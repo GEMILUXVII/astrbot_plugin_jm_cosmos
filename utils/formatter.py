@@ -218,16 +218,20 @@ class MessageFormatter:
 /jmrank      - 查看排行榜
 /jmhelp      - 显示此帮助信息
 
+【账号命令】
+/jmlogin <用户名> <密码> - 登录JM账号
+/jmlogout   - 登出账号
+/jmstatus   - 查看登录状态
+
 【使用示例】
 /jm 123456       - 下载ID为123456的本子
 /jms 标签名      - 搜索包含该标签的漫画
-/jmi 123456      - 查看本子详细信息
 /jmrank week     - 查看周排行榜
-/jmrank month 2  - 查看月排行榜第2页
+/jmlogin user pw - 登录账号
 
 【说明】
 • 下载的文件将自动打包发送
-• 支持群聊和私聊使用"""
+• 登录后可访问收藏夹等功能"""
 
     @staticmethod
     def format_error(error_type: str, detail: str = "") -> str:

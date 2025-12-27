@@ -22,8 +22,8 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.5.1",
-    "https://github.com/GEMILUXVII/jm_cosmos2",
+    "2.5.4",
+    "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
     """AstrBot JM漫画下载插件"""

@@ -2,6 +2,24 @@
 
 所有版本更新记录。
 
+## **v2.5.0** (2025-12-27)
+
+### 新增功能
+- **推荐浏览功能** - 新增 `/jmrec` 命令，融合推荐与分类浏览
+  - `/jmrec [分类] [排序] [时间] [页码]` - 灵活组合浏览条件
+  - 支持 9 种分类：`all`/`doujin`/`single`/`short`/`hanman`/`meiman`/`3d`/`cosplay`/`another`
+  - 支持 4 种排序：`hot`(热门)/`new`(最新)/`pic`(图多)/`like`(点赞)
+  - 支持 4 种时间范围：`day`(今日)/`week`(本周)/`month`(本月)/`all`(全部)
+  - 智能参数解析，顺序灵活
+  - `/jmrec help` 查看详细帮助
+
+### 架构优化
+- 新增 `browser.get_category_albums()` 方法
+- 新增 `formatter.format_recommend_results()` 格式化方法
+- 在 `JMBrowser` 中添加分类/排序/时间常量映射
+
+---
+
 ## **v2.4.1** (2025-12-27)
 
 ### Bug 修复

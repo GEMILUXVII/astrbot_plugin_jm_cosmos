@@ -1,5 +1,5 @@
 """
-JM Cosmos2 工具模块
+JM-Cosmos II 工具模块
 """
 
 from .formatter import MessageFormatter

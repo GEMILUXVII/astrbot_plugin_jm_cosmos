@@ -272,6 +272,120 @@ class JMBrowser(JMClientMixin):
             logger.error(f"获取月排行榜失败: {e}")
             return []
 
+    # ==================== 分类浏览功能 ====================
+
+    # 分类常量映射
+    CATEGORY_MAP = {
+        "all": "0",
+        "doujin": "doujin",
+        "single": "single",
+        "short": "short",
+        "hanman": "hanman",
+        "meiman": "meiman",
+        "3d": "3D",
+        "cosplay": "doujin_cosplay",
+        "another": "another",
+    }
+
+    # 排序常量映射
+    ORDER_MAP = {
+        "new": "mr",  # 最新
+        "hot": "mv",  # 最热（观看数）
+        "pic": "mp",  # 图片多
+        "like": "tf",  # 点赞多
+    }
+
+    # 时间常量映射
+    TIME_MAP = {
+        "day": "t",  # 今日
+        "week": "w",  # 本周
+        "month": "m",  # 本月
+        "all": "a",  # 全部时间
+    }
+
+    async def get_category_albums(
+        self,
+        category: str = "all",
+        order_by: str = "hot",
+        time_range: str = "week",
+        page: int = 1,
+    ) -> list[dict]:
+        """
+        获取分类浏览结果
+
+        Args:
+            category: 分类类型 (all/doujin/single/short/hanman/meiman/3d/cosplay/another)
+            order_by: 排序方式 (new/hot/pic/like)
+            time_range: 时间范围 (day/week/month/all)
+            page: 页码
+
+        Returns:
+            漫画列表
+        """
+        if not self.is_available():
+            return []
+
+        try:
+            option = self._get_option()
+            if option is None:
+                return []
+
+            # 转换参数
+            cat = self.CATEGORY_MAP.get(category.lower(), "0")
+            order = self.ORDER_MAP.get(order_by.lower(), "mv")
+            time = self.TIME_MAP.get(time_range.lower(), "w")
+
+            return await self._run_sync(
+                self._get_category_albums_sync, page, time, cat, order, option
+            )
+        except Exception as e:
+            logger.error(f"获取分类浏览失败: {e}")
+            return []
+
+    def _get_category_albums_sync(
+        self, page: int, time: str, category: str, order_by: str, option
+    ) -> list[dict]:
+        """同步获取分类浏览结果"""
+        try:
+            client = option.build_jm_client()
+            category_page = client.categories_filter(
+                page=page,
+                time=time,
+                category=category,
+                order_by=order_by,
+            )
+
+            results = []
+            for album_id, title in category_page.iter_id_title():
+                results.append(
+                    {
+                        "id": album_id,
+                        "title": title,
+                        "author": "",
+                        "tags": [],
+                        "category": category,
+                    }
+                )
+            return results
+        except Exception as e:
+            logger.error(f"获取分类浏览失败: {e}")
+            return []
+
+    @classmethod
+    def get_category_list(cls) -> list[str]:
+        """获取所有支持的分类"""
+        return list(cls.CATEGORY_MAP.keys())
+
+    @classmethod
+    def get_order_list(cls) -> list[str]:
+        """获取所有支持的排序方式"""
+        return list(cls.ORDER_MAP.keys())
+
+    @classmethod
+    def get_time_list(cls) -> list[str]:
+        """获取所有支持的时间范围"""
+        return list(cls.TIME_MAP.keys())
+
     # ==================== 收藏夹功能 ====================
 
     async def get_favorites(

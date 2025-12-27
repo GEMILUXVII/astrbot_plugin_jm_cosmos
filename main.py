@@ -1,5 +1,5 @@
 """
-JM Cosmos2 - AstrBot JM漫画下载插件
+JM-Cosmos II - AstrBot JM漫画下载插件
 
 支持搜索、下载禁漫天堂的漫画本子，基于jmcomic库
 """
@@ -22,7 +22,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.4.1",
+    "2.5.0",
     "https://github.com/GEMILUXVII/jm_cosmos2",
 )
 class JMCosmosPlugin(Star):
@@ -32,13 +32,13 @@ class JMCosmosPlugin(Star):
         super().__init__(context)
         self.config = config
 
-        logger.info("正在初始化 JM Cosmos2 插件...")
+        logger.info("正在初始化 JM-Cosmos II 插件...")
 
         # 获取数据目录
         try:
             self.data_dir = StarTools.get_data_dir(PLUGIN_NAME)
             self.data_dir.mkdir(parents=True, exist_ok=True)
-            logger.info(f"JM Cosmos2 数据目录: {self.data_dir}")
+            logger.info(f"JM-Cosmos II 数据目录: {self.data_dir}")
         except Exception as e:
             logger.error(f"获取数据目录失败: {e}")
             self.data_dir = Path(__file__).parent / "data"
@@ -59,9 +59,9 @@ class JMCosmosPlugin(Star):
         # 调试模式
         self.debug_mode = self.config_manager.debug_mode
         if self.debug_mode:
-            logger.warning("JM Cosmos2 调试模式已启用")
+            logger.warning("JM-Cosmos II 调试模式已启用")
 
-        logger.info("JM Cosmos2 插件初始化完成")
+        logger.info("JM-Cosmos II 插件初始化完成")
 
     def _check_permission(self, event: AstrMessageEvent) -> tuple[bool, str]:
         """
@@ -137,7 +137,9 @@ class JMCosmosPlugin(Star):
                             ]
                         )
                     else:
-                        yield event.plain_result(MessageFormatter.format_album_info(detail))
+                        yield event.plain_result(
+                            MessageFormatter.format_album_info(detail)
+                        )
 
             # 执行下载
             result = await self.download_manager.download_album(album_id)
@@ -424,6 +426,116 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"获取排行榜失败: {e}")
+            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+
+    @filter.command("jmrec")
+    async def recommend_command(
+        self,
+        event: AstrMessageEvent,
+        arg1: str = None,
+        arg2: str = None,
+        arg3: str = None,
+        arg4: str = None,
+    ):
+        """
+        推荐浏览 - 按分类/排序/时间浏览漫画
+
+        用法: /jmrec [分类] [排序] [时间] [页码]
+        示例: /jmrec hanman hot week 1
+        """
+        # 权限检查
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        # 支持的参数值
+        from .core.browser import JMBrowser
+
+        categories = JMBrowser.get_category_list()
+        orders = JMBrowser.get_order_list()
+        times = JMBrowser.get_time_list()
+
+        # 默认值
+        category = "all"
+        order_by = "hot"
+        time_range = "week"
+        page = 1
+
+        # 如果第一个参数是 help，显示帮助
+        if arg1 and arg1.lower() == "help":
+            yield event.plain_result(MessageFormatter.format_recommend_help())
+            return
+
+        # 智能解析参数（按顺序：分类 -> 排序 -> 时间 -> 页码）
+        args = [arg1, arg2, arg3, arg4]
+        for arg in args:
+            if arg is None:
+                continue
+
+            arg_lower = str(arg).lower().strip()
+
+            # 尝试解析为页码（纯数字）
+            if arg_lower.isdigit():
+                page = int(arg_lower)
+                if page < 1:
+                    page = 1
+                continue
+
+            # 尝试匹配分类
+            if arg_lower in categories:
+                category = arg_lower
+                continue
+
+            # 尝试匹配排序
+            if arg_lower in orders:
+                order_by = arg_lower
+                continue
+
+            # 尝试匹配时间
+            if arg_lower in times:
+                time_range = arg_lower
+                continue
+
+            # 未知参数，显示帮助提示
+            yield event.plain_result(
+                f"❌ 未知参数: {arg}\n💡 使用 /jmrec help 查看帮助"
+            )
+            return
+
+        try:
+            # 显示加载提示
+            cat_name = MessageFormatter.CATEGORY_NAMES.get(category, category)
+            order_name = MessageFormatter.ORDER_NAMES.get(order_by, order_by)
+            time_name = MessageFormatter.TIME_NAMES.get(time_range, time_range)
+            yield event.plain_result(
+                f"🎯 正在获取 {cat_name} · {time_name}{order_name} 第{page}页..."
+            )
+
+            # 获取推荐内容
+            results = await self.browser.get_category_albums(
+                category=category,
+                order_by=order_by,
+                time_range=time_range,
+                page=page,
+            )
+
+            # 限制结果数量
+            page_size = self.config_manager.search_page_size
+            results = results[:page_size]
+
+            # 格式化并发送结果
+            result_msg = MessageFormatter.format_recommend_results(
+                results, category, order_by, time_range, page
+            )
+            yield event.plain_result(result_msg)
+
+        except Exception as e:
+            logger.error(f"获取推荐内容失败: {e}")
+            if self.debug_mode:
+                import traceback
+
+                logger.error(traceback.format_exc())
             yield event.plain_result(MessageFormatter.format_error("network", str(e)))
 
     @filter.command("jmlogin")

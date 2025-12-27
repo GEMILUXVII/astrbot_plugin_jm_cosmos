@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="logo.png" alt="AstrBot JM-Cosmos Plugin Logo" width="160" />
+  <img src="logo.png" alt="AstrBot JM-Cosmos II Plugin Logo" width="160" />
 </div>
 
-# <div align="center">JM-Cosmos</div>
+# <div align="center">JM-Cosmos II</div>
 
 <div align="center">
   <strong>全能型 JM 漫画下载与管理工具</strong>
@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.4.1-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.5.0-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -24,7 +24,7 @@
 
 ## 介绍
 
-JM-Cosmos 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画搜索、预览、下载、打包与 QQ 发送。
+JM-Cosmos II 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫画搜索、预览、下载、打包与 QQ 发送。
 
 **v2.0.0 是完全重构的版本**，采用模块化架构设计，代码更清晰、更易维护，并新增了多项实用功能。
 
@@ -147,6 +147,29 @@ pip install -r requirements.txt
 /jmrank week         # 查看周排行榜第1页
 /jmrank month 2      # 查看月排行榜第2页
 ```
+
+---
+
+#### `/jmrec [分类] [排序] [时间] [页码]`
+推荐浏览 - 按分类、排序、时间浏览漫画。
+
+| 参数     | 可选值                                                                 | 默认值 |
+| -------- | ---------------------------------------------------------------------- | ------ |
+| 分类     | `all` `doujin` `single` `short` `hanman` `meiman` `3d` `cosplay` `another` | `all`  |
+| 排序     | `hot`(热门) `new`(最新) `pic`(图多) `like`(点赞)                        | `hot`  |
+| 时间     | `day`(今日) `week`(本周) `month`(本月) `all`(全部)                       | `week` |
+| 页码     | 正整数                                                                 | `1`    |
+
+```
+/jmrec                  # 本周全分类热门（默认推荐）
+/jmrec hanman           # 本周韩漫热门
+/jmrec all hot day      # 今日全分类热门
+/jmrec doujin new week  # 本周同人最新
+/jmrec 3d hot month 2   # 本月3D热门第2页
+/jmrec help             # 查看详细帮助
+```
+
+> **提示**：参数顺序灵活，智能识别。例如 `/jmrec 2 hanman` 和 `/jmrec hanman 2` 效果相同。
 
 ---
 
@@ -319,7 +342,7 @@ volumes:
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.4.1** - 修复封面预览配置检查。
+**当前版本：v2.5.0** - 新增推荐浏览功能 `/jmrec`。
 
 ## 注意事项
 

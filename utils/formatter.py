@@ -138,6 +138,133 @@ class MessageFormatter:
 
         return "\n".join(lines)
 
+    # 分类名称映射（用于显示）
+    CATEGORY_NAMES = {
+        "all": "全部",
+        "0": "全部",
+        "doujin": "同人",
+        "single": "单本",
+        "short": "短篇",
+        "hanman": "韩漫",
+        "meiman": "美漫",
+        "3d": "3D",
+        "3D": "3D",
+        "cosplay": "Cosplay",
+        "doujin_cosplay": "Cosplay",
+        "another": "其他",
+    }
+
+    # 排序名称映射（用于显示）
+    ORDER_NAMES = {
+        "new": "最新",
+        "mr": "最新",
+        "hot": "热门",
+        "mv": "热门",
+        "pic": "图多",
+        "mp": "图多",
+        "like": "点赞",
+        "tf": "点赞",
+    }
+
+    # 时间名称映射（用于显示）
+    TIME_NAMES = {
+        "day": "今日",
+        "t": "今日",
+        "week": "本周",
+        "w": "本周",
+        "month": "本月",
+        "m": "本月",
+        "all": "全部时间",
+        "a": "全部时间",
+    }
+
+    @classmethod
+    def format_recommend_results(
+        cls,
+        results: list[dict],
+        category: str = "all",
+        order_by: str = "hot",
+        time_range: str = "week",
+        page: int = 1,
+    ) -> str:
+        """
+        格式化推荐/分类浏览结果
+
+        Args:
+            results: 结果列表
+            category: 分类类型
+            order_by: 排序方式
+            time_range: 时间范围
+            page: 当前页码
+
+        Returns:
+            格式化后的字符串
+        """
+        if not results:
+            return "📭 暂无推荐内容"
+
+        # 获取显示名称
+        cat_name = cls.CATEGORY_NAMES.get(category.lower(), category)
+        order_name = cls.ORDER_NAMES.get(order_by.lower(), order_by)
+        time_name = cls.TIME_NAMES.get(time_range.lower(), time_range)
+
+        lines = [
+            f"🎯 推荐浏览 - {cat_name} · {time_name}{order_name}",
+            f"📄 第 {page} 页",
+            "━━━━━━━━━━━━━━━━━━━━━",
+        ]
+
+        for i, album in enumerate(results, 1):
+            title = album.get("title", "未知标题")
+            if len(title) > 30:
+                title = title[:27] + "..."
+
+            album_id = album.get("id", "N/A")
+            lines.append(f"{i}. 【{album_id}】{title}")
+
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("💡 使用 /jmi <ID> 查看详情")
+        lines.append("💡 使用 /jm <ID> 直接下载")
+        lines.append(f"💡 使用 /jmrec ... {page + 1} 查看下一页")
+        lines.append("")
+        lines.append("📂 分类: all·doujin·single·short·hanman·meiman·3d·cosplay")
+        lines.append("📊 排序: hot(热门)·new(最新)·pic(图多)·like(点赞)")
+        lines.append("⏰ 时间: day(今日)·week(本周)·month(本月)·all(全部)")
+
+        return "\n".join(lines)
+
+    @staticmethod
+    def format_recommend_help() -> str:
+        """
+        格式化推荐功能帮助信息
+
+        Returns:
+            帮助信息字符串
+        """
+        return """🎯 推荐浏览使用帮助
+
+【命令格式】
+/jmrec [分类] [排序] [时间] [页码]
+
+【分类选项】
+all(全部) doujin(同人) single(单本)
+short(短篇) hanman(韩漫) meiman(美漫)
+3d(3D) cosplay another(其他)
+
+【排序选项】
+hot(热门) new(最新) pic(图多) like(点赞)
+
+【时间选项】
+day(今日) week(本周) month(本月) all(全部)
+
+【使用示例】
+/jmrec                  → 本周全分类热门
+/jmrec hanman           → 本周韩漫热门
+/jmrec all hot day      → 今日全分类热门
+/jmrec doujin new week  → 本周同人最新
+/jmrec 3d hot month 2   → 本月3D热门第2页"""
+
     @staticmethod
     def format_favorites(albums: list[dict], folders: list[dict], page: int = 1) -> str:
         """
@@ -250,7 +377,7 @@ class MessageFormatter:
         Returns:
             帮助信息字符串
         """
-        return """📚 JM Cosmos2 - 漫画下载插件
+        return """📚 JM-Cosmos II - 漫画下载插件
 
 【基本命令】
 /jm <ID>     - 下载指定ID的本子
@@ -258,6 +385,7 @@ class MessageFormatter:
 /jms <关键词> - 搜索漫画
 /jmi <ID>    - 查看本子详情
 /jmrank      - 查看排行榜
+/jmrec       - 推荐浏览（分类/排序/时间）
 /jmhelp      - 显示此帮助信息
 
 【账号命令】
@@ -270,6 +398,8 @@ class MessageFormatter:
 /jm 123456       - 下载ID为123456的本子
 /jms 标签名      - 搜索包含该标签的漫画
 /jmrank week     - 查看周排行榜
+/jmrec hanman    - 浏览韩漫热门
+/jmrec help      - 查看推荐功能详细帮助
 /jmfav 1         - 查看收藏夹第1页
 
 【说明】

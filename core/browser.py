@@ -130,6 +130,57 @@ class JMBrowser(JMClientMixin):
             logger.error(f"获取详情失败: {e}")
             return None
 
+    async def get_photo_id_by_index(
+        self, album_id: str, chapter_index: int
+    ) -> tuple[str, str, int] | None:
+        """
+        根据本子ID和章节序号获取章节的photo_id
+
+        Args:
+            album_id: 本子ID
+            chapter_index: 章节序号（从1开始）
+
+        Returns:
+            (photo_id, photo_title, total_chapters) 或 None（失败时）
+        """
+        if not self.is_available():
+            return None
+
+        try:
+            option = self._get_option()
+            if option is None:
+                return None
+
+            return await self._run_sync(
+                self._get_photo_id_by_index_sync, album_id, chapter_index, option
+            )
+        except Exception as e:
+            logger.error(f"获取章节ID失败: {e}")
+            return None
+
+    def _get_photo_id_by_index_sync(
+        self, album_id: str, chapter_index: int, option
+    ) -> tuple[str, str, int] | None:
+        """同步获取章节ID"""
+        try:
+            client = option.build_jm_client()
+            parsed_id = JmcomicText.parse_to_jm_id(album_id)
+            album = client.get_album_detail(parsed_id)
+
+            total_chapters = len(album.episode_list)
+
+            # 验证章节序号有效性（用户输入从1开始，内部索引从0开始）
+            if chapter_index < 1 or chapter_index > total_chapters:
+                return None
+
+            # 获取章节信息: (photo_id, photo_index, photo_title)
+            photo_id, _, photo_title = album.episode_list[chapter_index - 1]
+
+            return (photo_id, photo_title, total_chapters)
+        except Exception as e:
+            logger.error(f"获取章节ID失败: {e}")
+            return None
+
     async def get_album_cover(self, album_id: str, save_dir: Path) -> Path | None:
         """
         下载本子封面

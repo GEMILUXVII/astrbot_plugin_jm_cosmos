@@ -22,7 +22,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.5.0",
+    "2.5.1",
     "https://github.com/GEMILUXVII/jm_cosmos2",
 )
 class JMCosmosPlugin(Star):
@@ -201,13 +201,13 @@ class JMCosmosPlugin(Star):
 
     @filter.command("jmc")
     async def download_photo_command(
-        self, event: AstrMessageEvent, photo_id: str = None
+        self, event: AstrMessageEvent, album_id: str = None, chapter_index: str = None
     ):
         """
-        下载指定ID的章节
+        下载指定本子的指定章节
 
-        用法: /jmc <ID>
-        示例: /jmc 789012
+        用法: /jmc <本子ID> <章节序号>
+        示例: /jmc 123456 3
         """
         # 权限检查
         has_perm, error_msg = self._check_permission(event)
@@ -215,20 +215,55 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(error_msg)
             return
 
-        if photo_id is None:
+        # 参数检查
+        if album_id is None or chapter_index is None:
             yield event.plain_result(
-                "❌ 请提供章节ID\n用法: /jmc <ID>\n示例: /jmc 789012"
+                "❌ 请提供本子ID和章节序号\n用法: /jmc <本子ID> <章节序号>\n示例: /jmc 123456 3"
             )
             return
 
-        photo_id = str(photo_id).strip()
-        if not photo_id.isdigit():
+        album_id = str(album_id).strip()
+        if not album_id.isdigit():
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return
 
+        # 验证章节序号
         try:
-            yield event.plain_result(f"⏳ 开始下载章节 {photo_id}，请稍候...")
+            chapter_idx = int(chapter_index)
+            if chapter_idx < 1:
+                yield event.plain_result("❌ 章节序号必须大于0")
+                return
+        except ValueError:
+            yield event.plain_result("❌ 章节序号必须是数字")
+            return
 
+        try:
+            yield event.plain_result(
+                f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
+            )
+
+            # 获取章节的真正 photo_id
+            chapter_info = await self.browser.get_photo_id_by_index(
+                album_id, chapter_idx
+            )
+
+            if chapter_info is None:
+                yield event.plain_result(
+                    f"❌ 无法获取章节信息\n可能的原因:\n"
+                    f"• 本子 {album_id} 不存在\n"
+                    f"• 第 {chapter_idx} 章节不存在"
+                )
+                return
+
+            photo_id, photo_title, total_chapters = chapter_info
+
+            yield event.plain_result(
+                f"📖 找到章节: {photo_title}\n"
+                f"📚 章节: {chapter_idx}/{total_chapters}\n"
+                f"⏳ 开始下载..."
+            )
+
+            # 使用真正的 photo_id 下载
             result = await self.download_manager.download_photo(photo_id)
 
             if not result.success:
@@ -246,7 +281,8 @@ class JMCosmosPlugin(Star):
             )
 
             pack_result = packer.pack(
-                source_dir=result.save_path, output_name=f"JM_photo_{photo_id}"
+                source_dir=result.save_path,
+                output_name=f"JM{album_id}_Ch{chapter_idx}_{photo_title[:15]}",
             )
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)

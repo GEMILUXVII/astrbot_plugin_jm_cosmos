@@ -20,8 +20,7 @@ try:
 except ImportError:
     JMCOMIC_AVAILABLE = False
 
-from .client import JMClientMixin
-from .config import JMConfigManager
+from .base import JMClientMixin, JMConfigManager
 
 
 @dataclass

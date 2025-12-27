@@ -417,7 +417,7 @@ class JMCosmosPlugin(Star):
         """
         查看排行榜
 
-        用法: /jmrank [week/month] [页码]
+        用法: /jmrank [day/week/month] [页码]
         示例: /jmrank week 1
         """
         # 权限检查
@@ -428,9 +428,9 @@ class JMCosmosPlugin(Star):
 
         # 验证排行榜类型
         ranking_type = str(ranking_type).lower().strip()
-        if ranking_type not in ("week", "month"):
+        if ranking_type not in ("day", "week", "month"):
             yield event.plain_result(
-                "❌ 无效的排行榜类型\n用法: /jmrank [week/month] [页码]\n示例: /jmrank week 1"
+                "❌ 无效的排行榜类型\n用法: /jmrank [day/week/month] [页码]\n示例: /jmrank week 1"
             )
             return
 
@@ -443,10 +443,13 @@ class JMCosmosPlugin(Star):
             page = 1
 
         try:
-            type_name = "周" if ranking_type == "week" else "月"
+            type_names = {"day": "日", "week": "周", "month": "月"}
+            type_name = type_names.get(ranking_type, "周")
             yield event.plain_result(f"🏆 正在获取{type_name}排行榜第{page}页...")
 
-            if ranking_type == "week":
+            if ranking_type == "day":
+                results = await self.browser.get_day_ranking(page)
+            elif ranking_type == "week":
                 results = await self.browser.get_week_ranking(page)
             else:
                 results = await self.browser.get_month_ranking(page)

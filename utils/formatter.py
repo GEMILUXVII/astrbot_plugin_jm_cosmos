@@ -116,7 +116,8 @@ class MessageFormatter:
         if not results:
             return "🏆 暂无排行榜数据"
 
-        type_name = "周" if ranking_type == "week" else "月"
+        type_names = {"day": "日", "week": "周", "month": "月"}
+        type_name = type_names.get(ranking_type, "周")
         lines = [
             f"🏆 {type_name}排行榜 (第{page}页)",
             "━━━━━━━━━━━━━━━━━━━━━",
@@ -137,6 +138,9 @@ class MessageFormatter:
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
         lines.append("💡 使用 /jmi <ID> 查看详情")
         lines.append("💡 使用 /jm <ID> 直接下载")
+        lines.append(f"💡 使用 /jmrank {ranking_type} {page + 1} 查看下一页")
+        lines.append("")
+        lines.append("📊 类型: day(日榜) · week(周榜) · month(月榜)")
 
         return "\n".join(lines)
 

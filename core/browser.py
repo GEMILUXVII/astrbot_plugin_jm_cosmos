@@ -332,6 +332,51 @@ class JMBrowser(JMClientMixin):
             logger.error(f"获取月排行榜失败: {e}")
             return []
 
+    async def get_day_ranking(self, page: int = 1) -> list[dict]:
+        """
+        获取日排行榜
+
+        Args:
+            page: 页码
+
+        Returns:
+            排行榜结果列表
+        """
+        if not self.is_available():
+            return []
+
+        try:
+            option = self._get_option()
+            if option is None:
+                return []
+
+            return await self._run_sync(self._get_day_ranking_sync, page, option)
+        except Exception as e:
+            logger.error(f"获取日排行榜失败: {e}")
+            return []
+
+    def _get_day_ranking_sync(self, page: int, option) -> list[dict]:
+        """同步获取日排行榜"""
+        try:
+            client = option.build_jm_client()
+            ranking_page = client.day_ranking(page)
+
+            results = []
+            for album_id, title in ranking_page.iter_id_title():
+                results.append(
+                    {
+                        "id": album_id,
+                        "title": title,
+                        "author": "",
+                        "tags": [],
+                        "category": "",
+                    }
+                )
+            return results
+        except Exception as e:
+            logger.error(f"获取日排行榜失败: {e}")
+            return []
+
     # ==================== 分类浏览功能 ====================
 
     # 常量映射已移至 constants.py

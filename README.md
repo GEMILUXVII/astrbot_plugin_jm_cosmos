@@ -121,6 +121,16 @@ pip install -r requirements.txt
 | `admin_list`             | 管理员用户 ID 列表         | 空             |
 | `search_page_size`       | 搜索结果数量               | `5`            |
 | `debug_mode`             | 调试模式                   | `false`        |
+| `jm_username`            | JM账号用户名               | 空（可选）     |
+| `jm_password`            | JM账号密码                 | 空（可选）     |
+
+> [!IMPORTANT]
+> **关于登录持久化的重要说明**
+> 
+> - **在面板中配置账号密码**：插件重载/Bot重启后会**自动登录**，推荐使用此方式
+> - **仅使用 `/jmlogin` 命令登录**：登录状态仅保存在内存中，插件重载后需要**重新登录**
+> 
+> 如需使用收藏夹等登录功能，建议在 AstrBot 管理面板中配置 `jm_username` 和 `jm_password`
 
 ## 文件结构
 

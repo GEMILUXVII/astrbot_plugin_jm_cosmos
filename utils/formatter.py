@@ -171,13 +171,19 @@ class MessageFormatter:
         Returns:
             格式化后的字符串
         """
-        if not results:
-            return "📭 暂无推荐内容"
-
         # 获取显示名称
         cat_name = cls.CATEGORY_NAMES.get(category.lower(), category)
         order_name = cls.ORDER_NAMES.get(order_by.lower(), order_by)
         time_name = cls.TIME_NAMES.get(time_range.lower(), time_range)
+
+        if not results:
+            return (
+                f"📭 暂无推荐内容\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🔍 查询: {cat_name} · {time_name}{order_name}\n"
+                f"💡 某些分类在特定时间范围内可能没有内容\n"
+                f"💡 尝试扩大时间范围，如 week 或 month"
+            )
 
         lines = [
             f"🎯 推荐浏览 - {cat_name} · {time_name}{order_name}",

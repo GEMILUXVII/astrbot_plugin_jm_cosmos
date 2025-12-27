@@ -17,6 +17,9 @@ except ImportError:
 
 from .base import JMClientMixin, JMConfigManager
 from .constants import (
+    CATEGORY_MAP,
+    ORDER_MAP,
+    TIME_MAP,
     get_category_list,
     get_order_list,
     get_time_list,
@@ -409,9 +412,9 @@ class JMBrowser(JMClientMixin):
                 return []
 
             # 转换参数
-            cat = self.CATEGORY_MAP.get(category.lower(), "0")
-            order = self.ORDER_MAP.get(order_by.lower(), "mv")
-            time = self.TIME_MAP.get(time_range.lower(), "w")
+            cat = CATEGORY_MAP.get(category.lower(), "0")
+            order = ORDER_MAP.get(order_by.lower(), "mv")
+            time = TIME_MAP.get(time_range.lower(), "w")
 
             return await self._run_sync(
                 self._get_category_albums_sync, page, time, cat, order, option

@@ -171,6 +171,11 @@ pip install -r requirements.txt
 
 > **提示**：参数顺序灵活，智能识别。例如 `/jmrec 2 hanman` 和 `/jmrec hanman 2` 效果相同。
 
+> [!NOTE]
+> **关于空结果的说明**
+> 
+> 某些分类在特定时间范围内可能没有内容（如 `hanman hot day` 可能返回空），这是因为 JM 网站本身在该时间段内没有更新相关内容，并非插件 Bug。遇到这种情况时，建议尝试扩大时间范围（如 `week` 或 `month`）。
+
 ---
 
 ### 账号功能

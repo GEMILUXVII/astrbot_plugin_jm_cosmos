@@ -501,6 +501,11 @@ class JMCosmosPlugin(Star):
         time_range = "week"
         page = 1
 
+        # 追踪哪些参数类型已被显式设置
+        category_set = False
+        order_set = False
+        time_set = False
+
         # 如果第一个参数是 help，显示帮助
         if arg1 and arg1.lower() == "help":
             yield event.plain_result(MessageFormatter.format_recommend_help())
@@ -523,17 +528,41 @@ class JMCosmosPlugin(Star):
 
             # 尝试匹配分类
             if arg_lower in categories:
+                if category_set:
+                    yield event.plain_result(
+                        f"❌ 检测到重复的分类参数: {arg}\n"
+                        f"当前已设置分类为: {category}\n"
+                        f"💡 每种类型只能指定一个参数"
+                    )
+                    return
                 category = arg_lower
+                category_set = True
                 continue
 
             # 尝试匹配排序
             if arg_lower in orders:
+                if order_set:
+                    yield event.plain_result(
+                        f"❌ 检测到重复的排序参数: {arg}\n"
+                        f"当前已设置排序为: {order_by}\n"
+                        f"💡 每种类型只能指定一个参数"
+                    )
+                    return
                 order_by = arg_lower
+                order_set = True
                 continue
 
             # 尝试匹配时间
             if arg_lower in times:
+                if time_set:
+                    yield event.plain_result(
+                        f"❌ 检测到重复的时间参数: {arg}\n"
+                        f"当前已设置时间为: {time_range}\n"
+                        f"💡 每种类型只能指定一个参数"
+                    )
+                    return
                 time_range = arg_lower
+                time_set = True
                 continue
 
             # 未知参数，显示帮助提示

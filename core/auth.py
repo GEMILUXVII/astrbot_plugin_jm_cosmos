@@ -1,8 +1,10 @@
 """
 JMComic 认证管理模块
 
-提供登录、登出、会话管理等认证功能。
+提供登录、登出、会话管理等认证功能，支持 cookies 持久化。
 """
+
+import json
 
 from astrbot.api import logger
 
@@ -28,6 +30,50 @@ class JMAuthManager(JMClientMixin):
         self._logged_in = False
         self._username: str | None = None
         self._client = None
+
+        # 尝试从 cookies 文件恢复登录状态
+        self._try_restore_session()
+
+    def _try_restore_session(self) -> None:
+        """尝试从 cookies 文件恢复登录状态"""
+        cookies_file = self.config.cookies_file
+        if cookies_file.exists():
+            try:
+                with open(cookies_file, encoding="utf-8") as f:
+                    data = json.load(f)
+                    if data.get("username"):
+                        self._username = data["username"]
+                        # 标记为需要重新验证
+                        logger.info(f"发现已保存的登录信息: {self._username}")
+            except Exception as e:
+                logger.debug(f"读取 cookies 文件失败: {e}")
+
+    def _save_session(self) -> None:
+        """保存登录会话到文件"""
+        if not self._logged_in or not self._username:
+            return
+
+        cookies_file = self.config.cookies_file
+        try:
+            data = {
+                "username": self._username,
+                "logged_in": True,
+            }
+            with open(cookies_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            logger.debug(f"登录信息已保存到: {cookies_file}")
+        except Exception as e:
+            logger.error(f"保存登录信息失败: {e}")
+
+    def _clear_session(self) -> None:
+        """清除保存的登录会话"""
+        cookies_file = self.config.cookies_file
+        if cookies_file.exists():
+            try:
+                cookies_file.unlink()
+                logger.debug("已清除保存的登录信息")
+            except Exception as e:
+                logger.error(f"清除登录信息失败: {e}")
 
     @property
     def is_logged_in(self) -> bool:
@@ -81,6 +127,9 @@ class JMAuthManager(JMClientMixin):
             self._username = username
             self._client = client
 
+            # 持久化保存
+            self._save_session()
+
             logger.info(f"用户 {username} 登录成功")
             return True, f"登录成功，欢迎 {username}！"
 
@@ -95,6 +144,37 @@ class JMAuthManager(JMClientMixin):
                 return False, "网络连接失败，请稍后重试"
 
             return False, f"登录失败: {error_msg}"
+
+    async def auto_login(self) -> tuple[bool, str]:
+        """
+        使用配置的凭据自动登录
+
+        Returns:
+            (成功与否, 消息)
+        """
+        if not self.config.has_credentials():
+            return False, "未配置登录凭据"
+
+        if self._logged_in:
+            return True, f"已登录: {self._username}"
+
+        return await self.login(self.config.jm_username, self.config.jm_password)
+
+    async def ensure_logged_in(self) -> tuple[bool, str]:
+        """
+        确保已登录（如果未登录则尝试自动登录）
+
+        Returns:
+            (成功与否, 消息)
+        """
+        if self._logged_in:
+            return True, f"已登录: {self._username}"
+
+        # 尝试使用配置的凭据自动登录
+        if self.config.has_credentials():
+            return await self.auto_login()
+
+        return False, "未登录，请使用 /jmlogin 登录"
 
     def logout(self) -> tuple[bool, str]:
         """
@@ -111,6 +191,9 @@ class JMAuthManager(JMClientMixin):
         self._username = None
         self._client = None
 
+        # 清除保存的会话
+        self._clear_session()
+
         logger.info(f"用户 {username} 已登出")
         return True, f"已登出账号 {username}"
 
@@ -124,4 +207,5 @@ class JMAuthManager(JMClientMixin):
         return {
             "logged_in": self._logged_in,
             "username": self._username,
+            "has_credentials": self.config.has_credentials(),
         }

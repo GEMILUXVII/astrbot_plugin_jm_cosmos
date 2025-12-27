@@ -120,6 +120,25 @@ class JMConfigManager:
         """调试模式"""
         return self.plugin_config.get("debug_mode", False)
 
+    @property
+    def jm_username(self) -> str:
+        """JM账号用户名"""
+        return self.plugin_config.get("jm_username", "")
+
+    @property
+    def jm_password(self) -> str:
+        """JM账号密码"""
+        return self.plugin_config.get("jm_password", "")
+
+    @property
+    def cookies_file(self) -> Path:
+        """Cookies文件路径"""
+        return self.data_dir / "cookies.json"
+
+    def has_credentials(self) -> bool:
+        """检查是否配置了登录凭据"""
+        return bool(self.jm_username and self.jm_password)
+
     def is_admin(self, user_id: str) -> bool:
         """检查用户是否是管理员"""
         if not self.admin_only:

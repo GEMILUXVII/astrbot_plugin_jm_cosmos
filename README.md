@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="#更新日志"><img src="https://img.shields.io/badge/VERSION-v2.1.1-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="#更新日志"><img src="https://img.shields.io/badge/VERSION-v2.2.0-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -95,6 +95,9 @@ pip install -r requirements.txt
 | `/jms <关键词>` | 搜索漫画           | `/jms 标签名`     |
 | `/jmi <ID>`     | 查看本子详情       | `/jmi 123456`     |
 | `/jmrank`       | 查看排行榜         | `/jmrank week 1`  |
+| `/jmlogin`      | 登录JM账号         | `/jmlogin u p`    |
+| `/jmlogout`     | 登出账号           | `/jmlogout`       |
+| `/jmstatus`     | 查看登录状态       | `/jmstatus`       |
 | `/jmhelp`       | 查看帮助信息       | `/jmhelp`         |
 
 ## 配置说明
@@ -167,7 +170,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.1.1** - 优化目录结构。
+**当前版本：v2.2.0** - 新增登录功能。
 
 ## 注意事项
 

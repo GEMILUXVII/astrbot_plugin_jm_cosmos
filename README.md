@@ -282,6 +282,39 @@ proxy_url: http://127.0.0.1:7890
 
 **A:** 在「启用的群列表」中填写群号（逗号分隔），如：`123456789,987654321`
 
+### Q: Docker 部署时文件发送失败？
+
+> [!IMPORTANT]
+> **AstrBot 和 NapCat 分离部署时，必须配置共享卷才能发送文件！**
+
+当 AstrBot 和 NapCat（或其他 OneBot 实现）部署在不同 Docker 容器中时，可能会遇到以下错误：
+
+- `识别URL失败, uri= /AstrBot/data/plugin_data/jm_cosmos2/downloads/...`
+- `文件消息缺少参数`
+
+**原因**：两个容器的文件系统是隔离的，NapCat 无法访问 AstrBot 容器内的文件。
+
+**解决方案**：在 NapCat 的 `docker-compose.yml` 中添加 volume 映射，使其能访问 AstrBot 的下载目录：
+
+```yaml
+services:
+  napcat:
+    volumes:
+      - ./napcat-data:/app/data
+      # 添加以下映射（路径根据实际情况调整）
+      - /宿主机上的AstrBot数据目录/plugin_data/jm_cosmos2/downloads:/AstrBot/data/plugin_data/jm_cosmos2/downloads
+```
+
+**示例**：假设 AstrBot 的数据目录在宿主机的 `/root/AstrBot/data`：
+
+```yaml
+volumes:
+  - /root/AstrBot/data/plugin_data/jm_cosmos2/downloads:/AstrBot/data/plugin_data/jm_cosmos2/downloads
+```
+
+> [!TIP]
+> 修改后需要重建容器：`docker-compose down && docker-compose up -d`
+
 ## 更新日志
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)

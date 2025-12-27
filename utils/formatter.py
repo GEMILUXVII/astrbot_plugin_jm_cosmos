@@ -2,6 +2,8 @@
 消息格式化工具
 """
 
+from ..core.constants import CATEGORY_NAMES, ORDER_NAMES, TIME_NAMES
+
 
 class MessageFormatter:
     """消息格式化器"""
@@ -138,45 +140,10 @@ class MessageFormatter:
 
         return "\n".join(lines)
 
-    # 分类名称映射（用于显示）
-    CATEGORY_NAMES = {
-        "all": "全部",
-        "0": "全部",
-        "doujin": "同人",
-        "single": "单本",
-        "short": "短篇",
-        "hanman": "韩漫",
-        "meiman": "美漫",
-        "3d": "3D",
-        "3D": "3D",
-        "cosplay": "Cosplay",
-        "doujin_cosplay": "Cosplay",
-        "another": "其他",
-    }
-
-    # 排序名称映射（用于显示）
-    ORDER_NAMES = {
-        "new": "最新",
-        "mr": "最新",
-        "hot": "热门",
-        "mv": "热门",
-        "pic": "图多",
-        "mp": "图多",
-        "like": "点赞",
-        "tf": "点赞",
-    }
-
-    # 时间名称映射（用于显示）
-    TIME_NAMES = {
-        "day": "今日",
-        "t": "今日",
-        "week": "本周",
-        "w": "本周",
-        "month": "本月",
-        "m": "本月",
-        "all": "全部时间",
-        "a": "全部时间",
-    }
+    # 常量映射已移至 core/constants.py，这里保留引用以保持兼容性
+    CATEGORY_NAMES = CATEGORY_NAMES
+    ORDER_NAMES = ORDER_NAMES
+    TIME_NAMES = TIME_NAMES
 
     @classmethod
     def format_recommend_results(
@@ -381,7 +348,7 @@ day(今日) week(本周) month(本月) all(全部)
 
 【基本命令】
 /jm <ID>     - 下载指定ID的本子
-/jmc <ID>    - 下载指定ID的章节
+/jmc <ID> <章节> - 下载指定本子的指定章节
 /jms <关键词> - 搜索漫画
 /jmi <ID>    - 查看本子详情
 /jmrank      - 查看排行榜

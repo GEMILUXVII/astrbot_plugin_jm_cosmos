@@ -16,6 +16,11 @@ except ImportError:
     JMCOMIC_AVAILABLE = False
 
 from .base import JMClientMixin, JMConfigManager
+from .constants import (
+    get_category_list,
+    get_order_list,
+    get_time_list,
+)
 
 
 class JMBrowser(JMClientMixin):
@@ -221,6 +226,10 @@ class JMBrowser(JMClientMixin):
             # 封面保存路径
             cover_path = save_dir / f"{parsed_id}.jpg"
 
+            # 如果封面已存在，直接返回（缓存）
+            if cover_path.exists():
+                return cover_path
+
             # 下载封面
             client.download_album_cover(parsed_id, str(cover_path))
 
@@ -325,34 +334,7 @@ class JMBrowser(JMClientMixin):
 
     # ==================== 分类浏览功能 ====================
 
-    # 分类常量映射
-    CATEGORY_MAP = {
-        "all": "0",
-        "doujin": "doujin",
-        "single": "single",
-        "short": "short",
-        "hanman": "hanman",
-        "meiman": "meiman",
-        "3d": "3D",
-        "cosplay": "doujin_cosplay",
-        "another": "another",
-    }
-
-    # 排序常量映射
-    ORDER_MAP = {
-        "new": "mr",  # 最新
-        "hot": "mv",  # 最热（观看数）
-        "pic": "mp",  # 图片多
-        "like": "tf",  # 点赞多
-    }
-
-    # 时间常量映射
-    TIME_MAP = {
-        "day": "t",  # 今日
-        "week": "w",  # 本周
-        "month": "m",  # 本月
-        "all": "a",  # 全部时间
-    }
+    # 常量映射已移至 constants.py
 
     async def get_category_albums(
         self,
@@ -422,20 +404,10 @@ class JMBrowser(JMClientMixin):
             logger.error(f"获取分类浏览失败: {e}")
             return []
 
-    @classmethod
-    def get_category_list(cls) -> list[str]:
-        """获取所有支持的分类"""
-        return list(cls.CATEGORY_MAP.keys())
-
-    @classmethod
-    def get_order_list(cls) -> list[str]:
-        """获取所有支持的排序方式"""
-        return list(cls.ORDER_MAP.keys())
-
-    @classmethod
-    def get_time_list(cls) -> list[str]:
-        """获取所有支持的时间范围"""
-        return list(cls.TIME_MAP.keys())
+    # 辅助方法：使用 constants 模块中的函数
+    get_category_list = staticmethod(get_category_list)
+    get_order_list = staticmethod(get_order_list)
+    get_time_list = staticmethod(get_time_list)
 
     # ==================== 收藏夹功能 ====================
 

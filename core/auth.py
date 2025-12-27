@@ -4,16 +4,14 @@ JMComic 认证管理模块
 提供登录、登出、会话管理等认证功能，支持 cookies 持久化。
 """
 
+import importlib.util
 import json
 
 from astrbot.api import logger
 
 from .base import JMClientMixin, JMConfigManager
 
-try:
-    JMCOMIC_AVAILABLE = True
-except ImportError:
-    JMCOMIC_AVAILABLE = False
+JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
 
 
 class JMAuthManager(JMClientMixin):

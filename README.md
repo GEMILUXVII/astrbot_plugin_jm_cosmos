@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="#更新日志"><img src="https://img.shields.io/badge/VERSION-v2.3.0-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.4.1-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -88,18 +88,123 @@ pip install -r requirements.txt
 
 ## 命令列表
 
-| 命令            | 说明               | 示例              |
-| --------------- | ------------------ | ----------------- |
-| `/jm <ID>`      | 下载指定 ID 的本子 | `/jm 123456`      |
-| `/jmc <ID>`     | 下载指定 ID 的章节 | `/jmc 789012`     |
-| `/jms <关键词>` | 搜索漫画           | `/jms 标签名`     |
-| `/jmi <ID>`     | 查看本子详情       | `/jmi 123456`     |
-| `/jmrank`       | 查看排行榜         | `/jmrank week 1`  |
-| `/jmlogin`      | 登录JM账号         | `/jmlogin u p`    |
-| `/jmlogout`     | 登出账号           | `/jmlogout`       |
-| `/jmstatus`     | 查看登录状态       | `/jmstatus`       |
-| `/jmfav`        | 查看我的收藏       | `/jmfav 1`        |
-| `/jmhelp`       | 查看帮助信息       | `/jmhelp`         |
+### 下载命令
+
+#### `/jm <ID>`
+下载指定 ID 的完整本子。
+
+```
+/jm 123456
+```
+
+- 下载完成后自动打包并发送
+- 若开启 `send_cover_preview`，下载前会显示封面预览
+
+---
+
+#### `/jmc <ID>`
+下载指定 ID 的单个章节。
+
+```
+/jmc 789012
+```
+
+---
+
+### 搜索与浏览
+
+#### `/jms <关键词>`
+搜索漫画。
+
+```
+/jms 标签名
+/jms 作者名
+```
+
+---
+
+#### `/jmi <ID>`
+查看本子详情（标题、作者、标签、章节数等）。
+
+```
+/jmi 123456
+```
+
+- 若开启 `send_cover_preview`，会同时显示封面图片
+
+---
+
+#### `/jmrank [类型] [页码]`
+查看排行榜。
+
+| 参数     | 可选值         | 默认值 |
+| -------- | -------------- | ------ |
+| 类型     | `week` `month` | `week` |
+| 页码     | 正整数         | `1`    |
+
+```
+/jmrank              # 查看周排行榜第1页
+/jmrank week         # 查看周排行榜第1页
+/jmrank month 2      # 查看月排行榜第2页
+```
+
+---
+
+### 账号功能
+
+#### `/jmlogin <用户名> <密码>`
+登录 JM 账号。
+
+```
+/jmlogin myuser mypassword
+```
+
+> **提示**：建议在管理面板中配置账号密码以实现自动登录
+
+---
+
+#### `/jmlogout`
+登出当前账号。
+
+```
+/jmlogout
+```
+
+---
+
+#### `/jmstatus`
+查看当前登录状态。
+
+```
+/jmstatus
+```
+
+---
+
+#### `/jmfav [页码] [收藏夹ID]`
+查看我的收藏（需要先登录）。
+
+| 参数       | 说明                     | 默认值       |
+| ---------- | ------------------------ | ------------ |
+| 页码       | 收藏列表页码             | `1`          |
+| 收藏夹ID   | 指定收藏夹，`0` 表示全部 | `0`          |
+
+```
+/jmfav               # 查看全部收藏第1页
+/jmfav 2             # 查看全部收藏第2页
+/jmfav 1 12345       # 查看收藏夹ID为12345的第1页
+```
+
+---
+
+### 帮助
+
+#### `/jmhelp`
+显示帮助信息。
+
+```
+/jmhelp
+```
 
 ## 配置说明
 
@@ -181,7 +286,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.3.0** - 新增收藏夹功能。
+**当前版本：v2.4.1** - 修复封面预览配置检查。
 
 ## 注意事项
 

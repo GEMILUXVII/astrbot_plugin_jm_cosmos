@@ -97,6 +97,48 @@ class MessageFormatter:
         return "\n".join(lines)
 
     @staticmethod
+    def format_ranking_results(
+        results: list[dict], ranking_type: str, page: int = 1
+    ) -> str:
+        """
+        格式化排行榜结果
+
+        Args:
+            results: 排行榜结果列表
+            ranking_type: 排行榜类型 (week/month)
+            page: 当前页码
+
+        Returns:
+            格式化后的字符串
+        """
+        if not results:
+            return "🏆 暂无排行榜数据"
+
+        type_name = "周" if ranking_type == "week" else "月"
+        lines = [
+            f"🏆 {type_name}排行榜 (第{page}页)",
+            "━━━━━━━━━━━━━━━━━━━━━",
+        ]
+
+        for i, album in enumerate(results, 1):
+            title = album.get("title", "未知标题")
+            if len(title) > 30:
+                title = title[:27] + "..."
+
+            album_id = album.get("id", "N/A")
+
+            # 前三名使用特殊emoji
+            rank_emoji = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
+            lines.append(f"{rank_emoji} 【{album_id}】{title}")
+
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("💡 使用 /jmi <ID> 查看详情")
+        lines.append("💡 使用 /jm <ID> 直接下载")
+
+        return "\n".join(lines)
+
+    @staticmethod
     def format_download_result(result, pack_result=None) -> str:
         """
         格式化下载结果
@@ -173,12 +215,15 @@ class MessageFormatter:
 /jmc <ID>    - 下载指定ID的章节
 /jms <关键词> - 搜索漫画
 /jmi <ID>    - 查看本子详情
+/jmrank      - 查看排行榜
 /jmhelp      - 显示此帮助信息
 
 【使用示例】
-/jm 123456   - 下载ID为123456的本子
-/jms 标签名  - 搜索包含该标签的漫画
-/jmi 123456  - 查看本子详细信息
+/jm 123456       - 下载ID为123456的本子
+/jms 标签名      - 搜索包含该标签的漫画
+/jmi 123456      - 查看本子详细信息
+/jmrank week     - 查看周排行榜
+/jmrank month 2  - 查看月排行榜第2页
 
 【说明】
 • 下载的文件将自动打包发送

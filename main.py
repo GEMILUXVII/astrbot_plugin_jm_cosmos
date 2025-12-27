@@ -11,7 +11,7 @@ from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, StarTools, register
 
-from .core import JMConfigManager, JMDownloadManager, JMPacker
+from .core import JMBrowser, JMConfigManager, JMDownloadManager, JMPacker
 from .utils import MessageFormatter
 
 # 插件名称常量
@@ -49,6 +49,9 @@ class JMCosmosPlugin(Star):
 
         # 初始化下载管理器
         self.download_manager = JMDownloadManager(self.config_manager)
+
+        # 初始化浏览查询器
+        self.browser = JMBrowser(self.config_manager)
 
         # 调试模式
         self.debug_mode = self.config_manager.debug_mode
@@ -117,7 +120,7 @@ class JMCosmosPlugin(Star):
 
             # 如果配置了发送封面预览，先获取详情
             if self.config_manager.send_cover_preview:
-                detail = await self.download_manager.get_album_detail(album_id)
+                detail = await self.browser.get_album_detail(album_id)
                 if detail:
                     yield event.plain_result(MessageFormatter.format_album_info(detail))
 
@@ -286,7 +289,7 @@ class JMCosmosPlugin(Star):
         try:
             yield event.plain_result(f"🔍 正在搜索: {keyword}...")
 
-            results = await self.download_manager.search_albums(keyword)
+            results = await self.browser.search_albums(keyword)
 
             # 限制结果数量
             page_size = self.config_manager.search_page_size
@@ -327,7 +330,7 @@ class JMCosmosPlugin(Star):
         try:
             yield event.plain_result(f"📖 正在获取本子 {album_id} 的详情...")
 
-            detail = await self.download_manager.get_album_detail(album_id)
+            detail = await self.browser.get_album_detail(album_id)
 
             if not detail:
                 yield event.plain_result(MessageFormatter.format_error("not_found"))
@@ -337,4 +340,58 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"获取详情失败: {e}")
+            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+
+    @filter.command("jmrank")
+    async def ranking_command(
+        self, event: AstrMessageEvent, ranking_type: str = "week", page: int = 1
+    ):
+        """
+        查看排行榜
+
+        用法: /jmrank [week/month] [页码]
+        示例: /jmrank week 1
+        """
+        # 权限检查
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        # 验证排行榜类型
+        ranking_type = str(ranking_type).lower().strip()
+        if ranking_type not in ("week", "month"):
+            yield event.plain_result(
+                "❌ 无效的排行榜类型\n用法: /jmrank [week/month] [页码]\n示例: /jmrank week 1"
+            )
+            return
+
+        # 验证页码
+        try:
+            page = int(page)
+            if page < 1:
+                page = 1
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            type_name = "周" if ranking_type == "week" else "月"
+            yield event.plain_result(f"🏆 正在获取{type_name}排行榜第{page}页...")
+
+            if ranking_type == "week":
+                results = await self.browser.get_week_ranking(page)
+            else:
+                results = await self.browser.get_month_ranking(page)
+
+            # 限制结果数量
+            page_size = self.config_manager.search_page_size
+            results = results[:page_size]
+
+            result_msg = MessageFormatter.format_ranking_results(
+                results, ranking_type, page
+            )
+            yield event.plain_result(result_msg)
+
+        except Exception as e:
+            logger.error(f"获取排行榜失败: {e}")
             yield event.plain_result(MessageFormatter.format_error("network", str(e)))

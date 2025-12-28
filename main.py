@@ -5,6 +5,7 @@ JM-Cosmos II - AstrBot JM漫画下载插件
 """
 
 from pathlib import Path
+import time
 
 import astrbot.api.message_components as Comp
 from astrbot.api import AstrBotConfig, logger
@@ -22,7 +23,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.5.4",
+    "2.5.5",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -160,7 +161,7 @@ class JMCosmosPlugin(Star):
 
             pack_result = packer.pack(
                 source_dir=result.save_path,
-                output_name=f"JM{album_id}_{result.title[:20]}",
+                output_name=f"dl_{album_id}_{int(time.time())}",
             )
 
             # 发送结果消息
@@ -171,13 +172,17 @@ class JMCosmosPlugin(Star):
                 and pack_result.output_path
                 and pack_result.format != "none"
             ):
+                # 构建文件路径 - 调试输出
+                file_path_str = str(pack_result.output_path)
+                logger.info(f"准备发送文件: {file_path_str}")
+
                 # 发送打包后的文件
                 yield event.chain_result(
                     [
                         Comp.Plain(result_msg),
                         Comp.File(
                             name=pack_result.output_path.name,
-                            file=str(pack_result.output_path),
+                            file=file_path_str,
                         ),
                     ]
                 )
@@ -282,7 +287,7 @@ class JMCosmosPlugin(Star):
 
             pack_result = packer.pack(
                 source_dir=result.save_path,
-                output_name=f"JM{album_id}_Ch{chapter_idx}_{photo_title[:15]}",
+                output_name=f"dl_{album_id}_ch{chapter_idx}_{int(time.time())}",
             )
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
@@ -292,12 +297,15 @@ class JMCosmosPlugin(Star):
                 and pack_result.output_path
                 and pack_result.format != "none"
             ):
+                file_path_str = str(pack_result.output_path)
+                logger.info(f"准备发送章节文件: {file_path_str}")
+
                 yield event.chain_result(
                     [
                         Comp.Plain(result_msg),
                         Comp.File(
                             name=pack_result.output_path.name,
-                            file=str(pack_result.output_path),
+                            file=file_path_str,
                         ),
                     ]
                 )

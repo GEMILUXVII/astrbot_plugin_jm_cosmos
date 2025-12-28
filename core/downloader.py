@@ -4,23 +4,19 @@ JMComic 下载管理模块
 专注于下载功能：下载本子、下载章节。
 """
 
+import importlib.util
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:
-    import jmcomic
-    from jmcomic import (
-        JmcomicText,
-        JmOption,
-    )
-
-    JMCOMIC_AVAILABLE = True
-except ImportError:
-    JMCOMIC_AVAILABLE = False
-
 from .base import JMClientMixin, JMConfigManager
+
+JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
+
+if JMCOMIC_AVAILABLE:
+    import jmcomic
+    from jmcomic import JmcomicText, JmOption
 
 
 @dataclass

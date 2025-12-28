@@ -5,21 +5,21 @@ JMComic 客户端管理模块
 """
 
 import asyncio
+import importlib.util
 from collections.abc import Callable
 from typing import TypeVar
-
-try:
-    from jmcomic import JmOption
-
-    JMCOMIC_AVAILABLE = True
-except ImportError:
-    JMCOMIC_AVAILABLE = False
-    JmOption = None
 
 from .config import JMConfigManager
 
 # 泛型类型，用于标注返回值
 T = TypeVar("T")
+
+JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
+
+if JMCOMIC_AVAILABLE:
+    from jmcomic import JmOption
+else:
+    JmOption = None
 
 
 class JMClientMixin:

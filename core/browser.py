@@ -4,16 +4,10 @@ JMComic 浏览查询模块
 提供搜索、详情查看、排行榜等浏览功能。
 """
 
+import importlib.util
 from pathlib import Path
 
 from astrbot.api import logger
-
-try:
-    from jmcomic import JmcomicText
-
-    JMCOMIC_AVAILABLE = True
-except ImportError:
-    JMCOMIC_AVAILABLE = False
 
 from .base import JMClientMixin, JMConfigManager
 from .constants import (
@@ -24,6 +18,11 @@ from .constants import (
     get_order_list,
     get_time_list,
 )
+
+JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
+
+if JMCOMIC_AVAILABLE:
+    from jmcomic import JmcomicText
 
 
 class JMBrowser(JMClientMixin):

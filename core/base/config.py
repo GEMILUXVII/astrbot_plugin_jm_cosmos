@@ -2,16 +2,16 @@
 JMComic 配置管理模块
 """
 
+import importlib.util
 import os
 from pathlib import Path
 from typing import Any
 
-try:
-    from jmcomic import JmModuleConfig, JmOption
+JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
 
-    JMCOMIC_AVAILABLE = True
-except ImportError:
-    JMCOMIC_AVAILABLE = False
+if JMCOMIC_AVAILABLE:
+    from jmcomic import JmModuleConfig, JmOption
+else:
     JmOption = None
 
 
@@ -49,7 +49,7 @@ class JMConfigManager:
     @property
     def client_type(self) -> str:
         """获取客户端类型"""
-        return self.plugin_config.get("client_type", "app")
+        return self.plugin_config.get("client_type", "api")
 
     @property
     def use_proxy(self) -> bool:

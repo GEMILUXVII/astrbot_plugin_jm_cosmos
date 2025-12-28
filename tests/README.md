@@ -14,14 +14,11 @@ tests/
 # 安装依赖
 pip install pytest pytest-asyncio jmcomic
 
-# 运行单元测试
+# 单元测试
 pytest tests/unit/ -v
 
-# 运行集成测试
+# 集成测试
 pytest tests/integration/ -v
-
-# 运行所有测试
-pytest tests/ -v
 ```
 
 ## 配置

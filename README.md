@@ -327,26 +327,45 @@ proxy_url: http://127.0.0.1:7890
 
 **原因**：两个容器的文件系统是隔离的，NapCat 无法访问 AstrBot 容器内的文件。
 
-**解决方案**：在 NapCat 的 `docker-compose.yml` 中添加 volume 映射，使其能访问 AstrBot 的下载目录：
+**解决方案**：在 NapCat 的 `docker-compose.yml` 中添加 volume 映射，使其能访问 AstrBot 的数据目录：
 
 ```yaml
-services:
-  napcat:
     volumes:
-      - ./napcat-data:/app/data
-      # 添加以下映射（路径根据实际情况调整）
-      - /宿主机上的AstrBot数据目录/plugin_data/jm_cosmos2/downloads:/AstrBot/data/plugin_data/jm_cosmos2/downloads
+      - ./ntqq:/app/.config/QQ
+      - ./napcat/config:/app/napcat/config
+      - /root/AstrBot/data:/AstrBot/data 
+      # 映射 AstrBot 数据目录，使 NapCat 可以访问下载的文件
 ```
 
-**示例**：假设 AstrBot 的数据目录在宿主机的 `/root/AstrBot/data`：
-
-```yaml
-volumes:
-  - /root/AstrBot/data/plugin_data/jm_cosmos2/downloads:/AstrBot/data/plugin_data/jm_cosmos2/downloads
-```
+> [!NOTE]
+> 将 `/root/AstrBot/data` 替换为您服务器上 AstrBot 数据目录的实际路径。
 
 > [!TIP]
 > 修改后需要重建容器：`docker-compose down && docker-compose up -d`
+
+### Q: 文件发送失败，提示 "rich media transfer failed"？
+
+**A:** 这通常是 QQ 账号被风控导致的，而非插件或路径问题。
+
+**错误示例（NapCat 日志）：**
+
+```
+[error] USERNAME | 发生错误 Error: EventChecker Failed: ...
+{
+    "result": -1,
+    "errMsg": "rich media transfer failed"
+}
+```
+
+**可能原因：**
+- QQ 检测到敏感内容并限制了文件发送功能
+- 账号因频繁发送文件被临时限制
+
+**解决方案：**
+1. 尝试重启 NapCat：`docker restart napcat`
+2. 等待一段时间（几小时到几天）后风控可能自动解除
+3. 换用其他 QQ 账号
+4. **强烈建议**：开启 `pack_password` 加密功能，可有效降低触发风控的概率
 
 ## 更新日志
 

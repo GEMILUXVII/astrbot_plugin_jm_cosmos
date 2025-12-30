@@ -4,7 +4,6 @@ tests 根目录配置
 注册 pytest markers，供单元测试和集成测试共用。
 """
 
-import pytest
 
 
 def pytest_configure(config):

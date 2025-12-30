@@ -5,7 +5,6 @@
 注意：由于 formatter.py 使用相对导入，我们直接复制格式化逻辑进行测试。
 """
 
-import pytest
 
 # 由于 utils/formatter.py 使用相对导入 (from ..core.constants)，
 # 在独立测试环境中难以正确导入。

@@ -5,7 +5,6 @@
 使用 mock 避免实际网络请求。
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest

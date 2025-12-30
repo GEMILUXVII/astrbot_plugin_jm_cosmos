@@ -13,7 +13,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, StarTools, register
 
 from .core import JMAuthManager, JMBrowser, JMConfigManager, JMDownloadManager, JMPacker
-from .utils import MessageFormatter
+from .utils import MessageFormatter, send_with_recall
 
 # 插件名称常量
 PLUGIN_NAME = "jm_cosmos2"
@@ -23,7 +23,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.5.5",
+    "2.6.0",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -176,8 +176,10 @@ class JMCosmosPlugin(Star):
                 file_path_str = str(pack_result.output_path)
                 logger.info(f"准备发送文件: {file_path_str}")
 
-                # 发送打包后的文件
-                yield event.chain_result(
+                # 构建消息链
+                from astrbot.api.event import MessageChain
+
+                file_chain = MessageChain(
                     [
                         Comp.Plain(result_msg),
                         Comp.File(
@@ -186,6 +188,16 @@ class JMCosmosPlugin(Star):
                         ),
                     ]
                 )
+
+                # 根据配置决定是否使用自动撤回
+                if self.config_manager.auto_recall_enabled:
+                    await send_with_recall(
+                        event,
+                        file_chain,
+                        self.config_manager.auto_recall_delay,
+                    )
+                else:
+                    yield event.chain_result(file_chain.chain)
 
                 # 自动清理
                 if self.config_manager.auto_delete_after_send:
@@ -300,7 +312,10 @@ class JMCosmosPlugin(Star):
                 file_path_str = str(pack_result.output_path)
                 logger.info(f"准备发送章节文件: {file_path_str}")
 
-                yield event.chain_result(
+                # 构建消息链
+                from astrbot.api.event import MessageChain
+
+                file_chain = MessageChain(
                     [
                         Comp.Plain(result_msg),
                         Comp.File(
@@ -309,6 +324,16 @@ class JMCosmosPlugin(Star):
                         ),
                     ]
                 )
+
+                # 根据配置决定是否使用自动撤回
+                if self.config_manager.auto_recall_enabled:
+                    await send_with_recall(
+                        event,
+                        file_chain,
+                        self.config_manager.auto_recall_delay,
+                    )
+                else:
+                    yield event.chain_result(file_chain.chain)
 
                 if self.config_manager.auto_delete_after_send:
                     JMPacker.cleanup(result.save_path)

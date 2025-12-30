@@ -4,9 +4,7 @@
 测试 core/base/config.py 中的 JMConfigManager 类。
 """
 
-from pathlib import Path
 
-import pytest
 
 
 class TestConfigManagerDefaults:

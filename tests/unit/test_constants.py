@@ -4,7 +4,6 @@
 测试 core/constants.py 中的映射和辅助函数。
 """
 
-import pytest
 
 
 class TestCategoryMap:

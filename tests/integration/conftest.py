@@ -49,7 +49,7 @@ sys.path.insert(0, str(PLUGIN_ROOT))
 # 从 tests/.env 文件读取测试账号配置
 env_file = TESTS_ROOT / ".env"
 if env_file.exists():
-    with open(env_file, "r", encoding="utf-8") as f:
+    with open(env_file, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:

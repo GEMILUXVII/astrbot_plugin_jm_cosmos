@@ -120,5 +120,17 @@
     "description": "JM账号密码",
     "hint": "配合用户名使用，支持自动登录（可选）",
     "default": ""
+  },
+  "auto_recall_enabled": {
+    "type": "bool",
+    "description": "自动撤回文件消息",
+    "hint": "发送文件后自动撤回（仅支持 QQ/NapCat 平台）",
+    "default": false
+  },
+  "auto_recall_delay": {
+    "type": "int",
+    "description": "撤回延迟（秒）",
+    "hint": "发送后多少秒自动撤回，建议30-120",
+    "default": 60
   }
 }

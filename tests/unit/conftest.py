@@ -24,6 +24,7 @@ mock_jmcomic.JmcomicText = MagicMock()
 
 # 设置 __spec__ 以通过 importlib.util.find_spec 检查
 import importlib.util
+
 mock_spec = importlib.util.spec_from_loader("jmcomic", loader=None)
 mock_jmcomic.__spec__ = mock_spec
 
@@ -53,8 +54,8 @@ plugin_pkg.__package__ = "astrbot_plugin_jm_cosmos"
 sys.modules["astrbot_plugin_jm_cosmos"] = plugin_pkg
 
 # 预先导入核心模块并注册
-from core import constants as core_constants
 from core import base as core_base
+from core import constants as core_constants
 
 # 设置 core 子包
 core_pkg = types.ModuleType("astrbot_plugin_jm_cosmos.core")

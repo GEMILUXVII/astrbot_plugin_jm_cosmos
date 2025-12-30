@@ -131,6 +131,16 @@ class JMConfigManager:
         return self.plugin_config.get("jm_password", "")
 
     @property
+    def auto_recall_enabled(self) -> bool:
+        """是否启用自动撤回"""
+        return self.plugin_config.get("auto_recall_enabled", False)
+
+    @property
+    def auto_recall_delay(self) -> int:
+        """自动撤回延迟（秒）"""
+        return self.plugin_config.get("auto_recall_delay", 60)
+
+    @property
     def cookies_file(self) -> Path:
         """Cookies文件路径"""
         return self.data_dir / "cookies.json"

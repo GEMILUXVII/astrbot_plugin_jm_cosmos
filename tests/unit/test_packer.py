@@ -4,11 +4,8 @@
 测试 core/packer.py 中的 JMPacker 类和 PackResult 数据类。
 """
 
-import os
 import zipfile
 from pathlib import Path
-
-import pytest
 
 
 class TestPackResult:

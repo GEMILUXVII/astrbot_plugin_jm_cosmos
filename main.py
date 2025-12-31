@@ -23,7 +23,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.6.0",
+    "2.6.1",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -348,12 +348,15 @@ class JMCosmosPlugin(Star):
             )
 
     @filter.command("jms")
-    async def search_command(self, event: AstrMessageEvent, keyword: str = None):
+    async def search_command(
+        self, event: AstrMessageEvent, keyword: str = None, page: int = 1
+    ):
         """
         搜索漫画
 
-        用法: /jms <关键词>
+        用法: /jms <关键词> [页码]
         示例: /jms 标签名
+        示例: /jms 标签名 2
         """
         # 权限检查
         has_perm, error_msg = self._check_permission(event)
@@ -363,7 +366,7 @@ class JMCosmosPlugin(Star):
 
         if keyword is None:
             yield event.plain_result(
-                "❌ 请提供搜索关键词\n用法: /jms <关键词>\n示例: /jms 标签名"
+                "❌ 请提供搜索关键词\n用法: /jms <关键词> [页码]\n示例: /jms 标签名\n示例: /jms 标签名 2"
             )
             return
 
@@ -372,16 +375,24 @@ class JMCosmosPlugin(Star):
             yield event.plain_result("❌ 搜索关键词不能为空")
             return
 
+        # 验证页码
         try:
-            yield event.plain_result(f"🔍 正在搜索: {keyword}...")
+            page = int(page)
+            if page < 1:
+                page = 1
+        except (ValueError, TypeError):
+            page = 1
 
-            results = await self.browser.search_albums(keyword)
+        try:
+            yield event.plain_result(f"🔍 正在搜索: {keyword} (第{page}页)...")
+
+            results = await self.browser.search_albums(keyword, page)
 
             # 限制结果数量
             page_size = self.config_manager.search_page_size
             results = results[:page_size]
 
-            result_msg = MessageFormatter.format_search_results(results, keyword)
+            result_msg = MessageFormatter.format_search_results(results, keyword, page)
             yield event.plain_result(result_msg)
 
         except Exception as e:

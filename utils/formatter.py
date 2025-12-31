@@ -77,14 +77,12 @@ class MessageFormatter:
 
         for i, album in enumerate(results, 1):
             title = album.get("title", "未知标题")
-            if len(title) > 30:
-                title = title[:27] + "..."
+            if len(title) > 50:
+                title = title[:47] + "..."
 
-            author = album.get("author", "未知")
             album_id = album.get("id", "N/A")
 
             lines.append(f"{i}. 【{album_id}】{title}")
-            lines.append(f"   ✍️ {author}")
 
             if album.get("tags"):
                 tags = album["tags"][:3]
@@ -95,6 +93,7 @@ class MessageFormatter:
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
         lines.append("💡 使用 /jmi <ID> 查看详情")
         lines.append("💡 使用 /jm <ID> 直接下载")
+        lines.append(f"💡 使用 /jms {keyword} {page + 1} 查看下一页")
 
         return "\n".join(lines)
 
@@ -359,7 +358,7 @@ day(今日) week(本周) month(本月) all(全部)
 【基本命令】
 /jm <ID>     - 下载指定ID的本子
 /jmc <ID> <章节> - 下载指定本子的指定章节
-/jms <关键词> - 搜索漫画
+/jms <关键词> [页码] - 搜索漫画
 /jmi <ID>    - 查看本子详情
 /jmrank      - 查看排行榜
 /jmrec       - 推荐浏览（分类/排序/时间）
@@ -373,7 +372,7 @@ day(今日) week(本周) month(本月) all(全部)
 
 【使用示例】
 /jm 123456       - 下载ID为123456的本子
-/jms 标签名      - 搜索包含该标签的漫画
+/jms 标签名 2    - 搜索包含该标签的漫画（第2页）
 /jmrank week     - 查看周排行榜
 /jmrec hanman    - 浏览韩漫热门
 /jmrec help      - 查看推荐功能详细帮助

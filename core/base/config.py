@@ -188,9 +188,15 @@ class JMConfigManager:
         }
 
         # 添加代理配置
+        # 修复 #43: Docker 环境下需要显式禁用代理，否则 jmcomic 会使用默认的系统代理
         if self.use_proxy and self.proxy_url:
             option_dict["client"]["postman"] = {
                 "meta_data": {"proxies": self.proxy_url}
+            }
+        else:
+            # 显式禁用代理，覆盖 jmcomic 的默认系统代理设置
+            option_dict["client"]["postman"] = {
+                "meta_data": {"proxies": {}}
             }
 
         # 使用字典构建 JmOption

@@ -2,6 +2,20 @@
 
 所有版本更新记录。
 
+## **v2.6.2** (2026-01-04)
+
+### Bug 修复
+- **Docker 环境代理问题** (Issue #43)
+  - 修复在 Docker 环境下即使未配置代理也会尝试连接 `127.0.0.1:7890` 的问题
+  - 原因：`jmcomic` 库默认使用系统代理，插件未显式禁用
+  - 修复：当 `use_proxy=false` 时，显式设置空代理覆盖 jmcomic 默认行为
+
+### 说明
+- 关于依赖缺失问题：请确保 AstrBot Docker 中已安装 `jmcomic` 库
+  - 可手动执行：`docker exec -it astrbot pip install jmcomic`
+
+---
+
 ## **v2.6.1** (2025-12-31)
 
 ### 新增功能

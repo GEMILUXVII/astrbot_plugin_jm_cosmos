@@ -240,67 +240,55 @@ pip install -r requirements.txt
 
 所有配置可在 AstrBot 管理面板中修改：
 
-| 配置项                   | 说明                       | 默认值         |
-| ------------------------ | -------------------------- | -------------- |
-| `download_dir`           | 漫画下载目录               | `./downloads`  |
-| `image_suffix`           | 图片格式 (.jpg/.png/.webp) | `.jpg`         |
-| `client_type`            | 客户端类型 (api/html)      | `api`          |
-| `use_proxy`              | 是否使用代理               | `false`        |
-| `proxy_url`              | 代理服务器地址             | 空             |
-| `pack_format`            | 打包格式 (zip/pdf/none)    | `zip`          |
-| `pack_password`          | 打包密码（留空则不加密）   | 空             |
-| `auto_delete_after_send` | 发送后自动删除             | `true`         |
-| `send_cover_preview`     | 发送封面预览               | `true`         |
-| `auto_recall_enabled`    | 自动撤回文件消息 (仅QQ)    | `false`        |
-| `auto_recall_delay`      | 自动撤回延迟时间 (秒)      | `60`           |
-| `enabled_groups`         | 启用的群列表（逗号分隔）   | 空（全部启用） |
-| `admin_only`             | 仅管理员可用               | `false`        |
-| `admin_list`             | 管理员用户 ID 列表         | 空             |
-| `search_page_size`       | 搜索结果数量               | `5`            |
-| `daily_download_limit`   | 每日下载次数限制 (0=不限)  | `0`            |
-| `debug_mode`             | 调试模式                   | `false`        |
-| `jm_username`            | JM账号用户名               | 空（可选）     |
-| `jm_password`            | JM账号密码                 | 空（可选）     |
-
-> [!NOTE]
-> **关于每日下载限制**
-> 
-> 设置 `daily_download_limit` 后，每个用户（按 QQ 号识别）每日下载次数受限。`admin_list` 中的管理员不受此限制。
-
-> [!NOTE]
-> **关于 webp 图片格式**
-> 
-> 当 `image_suffix` 设置为 `.webp` 时，**仅支持 ZIP 打包**。由于 pymupdf 库不支持 webp 格式，使用 PDF 打包将无法正常输出文件。webp 格式的优势在于体积更小，适合追求轻量化的用户；如无特殊需求，建议使用默认的 `.jpg` 格式以获得最佳兼容性。
-
-> [!TIP]
-> **防风控建议**
-> 
-> 为避免 QQ 账号被风控，强烈建议设置 `pack_password`（打包密码）。加密后的 ZIP/PDF 文件内容会被完全加密，QQ 无法扫描内部图片进行哈希比对或内容识别，可有效降低风控触发概率。
-
-> [!IMPORTANT]
-> **关于登录持久化的重要说明**
-> 
-> - **在面板中配置账号密码**：插件重载/Bot重启后会**自动登录**，推荐使用此方式
-> - **仅使用 `/jmlogin` 命令登录**：登录状态仅保存在内存中，插件重载后需要**重新登录**
-> 
-> 如需使用收藏夹等登录功能，建议在 AstrBot 管理面板中配置 `jm_username` 和 `jm_password`
+| 配置项                   | 说明                       | 默认值         | 备注 |
+| ------------------------ | -------------------------- | -------------- | ---- |
+| `download_dir`           | 漫画下载目录               | `./downloads`  |  |
+| `image_suffix`           | 图片格式 (.jpg/.png/.webp) | `.jpg`         | webp 仅支持 ZIP 打包 |
+| `client_type`            | 客户端类型 (api/html)      | `api`          | api 兼容性好，html 效率高但限 IP |
+| `use_proxy`              | 是否使用代理               | `false`        |  |
+| `proxy_url`              | 代理服务器地址             | 空             | 格式: `http://host:port` |
+| `max_concurrent_photos`  | 最大并发章节数             | `3`            | 建议 3-5 |
+| `max_concurrent_images`  | 最大并发图片数             | `5`            | 建议 5-10 |
+| `pack_format`            | 打包格式 (zip/pdf/none)    | `zip`          |  |
+| `pack_password`          | 打包密码                   | 空             | **强烈建议设置，可降低风控** |
+| `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
+| `auto_delete_after_send` | 发送后自动删除             | `true`         |  |
+| `send_cover_preview`     | 发送封面预览               | `true`         |  |
+| `auto_recall_enabled`    | 自动撤回文件消息           | `false`        | 仅支持 QQ/NapCat 平台 |
+| `auto_recall_delay`      | 自动撤回延迟 (秒)          | `60`           | 建议 30-120 |
+| `enabled_groups`         | 启用的群列表               | 空             | 逗号分隔，空=全部启用 |
+| `admin_only`             | 仅管理员可用               | `false`        |  |
+| `admin_list`             | 管理员 ID 列表             | 空             | 逗号分隔，不受下载限制 |
+| `search_page_size`       | 搜索结果数量               | `5`            |  |
+| `daily_download_limit`   | 每日下载限制               | `0`            | 0=不限，管理员豁免 |
+| `debug_mode`             | 调试模式                   | `false`        |  |
+| `jm_username`            | JM账号用户名               | 空             | 面板配置可自动登录 |
+| `jm_password`            | JM账号密码                 | 空             | 命令登录重启后失效 |
 
 ## 文件结构
 
 ```
-jm_cosmos2/
+astrbot_plugin_jm_cosmos/
 ├── main.py              # 插件入口和命令注册
 ├── metadata.yaml        # 插件元数据
 ├── _conf_schema.json    # 配置模式定义
 ├── requirements.txt     # 依赖库列表
 ├── core/                # 核心模块
 │   ├── __init__.py
-│   ├── config.py        # 配置管理器
+│   ├── auth.py          # 认证管理器
+│   ├── browser.py       # 浏览查询器（搜索、排行、详情）
+│   ├── constants.py     # 常量定义
 │   ├── downloader.py    # 下载管理器
-│   └── packer.py        # 打包模块 (ZIP/PDF)
+│   ├── packer.py        # 打包模块 (ZIP/PDF)
+│   ├── quota.py         # 下载配额管理器
+│   └── base/            # 基础模块
+│       ├── client.py    # 客户端混入类
+│       └── config.py    # 配置管理器
 └── utils/               # 工具模块
     ├── __init__.py
-    └── formatter.py     # 消息格式化器
+    ├── filename.py      # 文件名生成器
+    ├── formatter.py     # 消息格式化器
+    └── recall.py        # 消息撤回工具
 ```
 
 ## 常见问题

@@ -100,7 +100,7 @@ class TestAlbumDetailIntegration:
     @pytest.mark.asyncio
     async def test_get_album_detail_invalid_id(self, browser):
         """测试无效 ID"""
-        detail = await browser.get_album_detail("999999999")
+        _detail = await browser.get_album_detail("999999999")
 
         # 无效 ID 应该返回 None 或抛出异常
         # 这里只验证不会崩溃

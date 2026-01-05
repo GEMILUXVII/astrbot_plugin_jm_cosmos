@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.2-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.3-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -19,7 +19,7 @@
 <div align="center">
   <a href="https://pypi.org/project/jmcomic/"><img src="https://img.shields.io/badge/JMCOMIC-≥2.5.0-9C27B0?style=for-the-badge" alt="JMComic"></a>
   <a href="https://github.com/botuniverse/onebot-11"><img src="https://img.shields.io/badge/OneBotv11-AIOCQHTTP-FF5722?style=for-the-badge&logo=qq&logoColor=white" alt="OneBot v11 Support"></a>
-  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.01.04-2196F3?style=for-the-badge" alt="Updated"></a>
+  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.01.05-2196F3?style=for-the-badge" alt="Updated"></a>
 </div>
 
 ## 介绍
@@ -261,6 +261,11 @@ pip install -r requirements.txt
 | `jm_username`            | JM账号用户名               | 空（可选）     |
 | `jm_password`            | JM账号密码                 | 空（可选）     |
 
+> [!NOTE]
+> **关于 webp 图片格式**
+> 
+> 当 `image_suffix` 设置为 `.webp` 时，**仅支持 ZIP 打包**。由于 pymupdf 库不支持 webp 格式，使用 PDF 打包将无法正常输出文件。webp 格式的优势在于体积更小，适合追求轻量化的用户；如无特殊需求，建议使用默认的 `.jpg` 格式以获得最佳兼容性。
+
 > [!TIP]
 > **防风控建议**
 > 
@@ -375,7 +380,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.6.2** - 修复 Docker 环境代理问题 (Issue #43)。
+**当前版本：v2.6.3** - 新增文件名显示密码配置项。
 
 ## 注意事项
 

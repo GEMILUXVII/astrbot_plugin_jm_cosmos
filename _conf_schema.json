@@ -67,6 +67,12 @@
     "hint": "为ZIP或PDF设置密码，留空则不加密",
     "default": ""
   },
+  "filename_show_password": {
+    "type": "bool",
+    "description": "文件名显示密码",
+    "hint": "开启后在文件名末尾添加 #PWxxx 提示（仅当设置了密码时生效）",
+    "default": false
+  },
   "auto_delete_after_send": {
     "type": "bool",
     "description": "发送后自动删除",

@@ -4,7 +4,6 @@ JM-Cosmos II - AstrBot JM漫画下载插件
 支持搜索、下载禁漫天堂的漫画本子，基于jmcomic库
 """
 
-import time
 from pathlib import Path
 
 import astrbot.api.message_components as Comp
@@ -13,7 +12,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, StarTools, register
 
 from .core import JMAuthManager, JMBrowser, JMConfigManager, JMDownloadManager, JMPacker
-from .utils import MessageFormatter, send_with_recall
+from .utils import MessageFormatter, generate_album_filename, send_with_recall
 
 # 插件名称常量
 PLUGIN_NAME = "jm_cosmos2"
@@ -23,7 +22,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.6.2",
+    "2.6.3",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -122,7 +121,7 @@ class JMCosmosPlugin(Star):
             # 发送开始下载提示
             yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
 
-            # 如果配置了发送封面预览，先获取详情和封面
+            # 如果配置了发送封面预览，获取详情和封面
             if self.config_manager.send_cover_preview:
                 detail = await self.browser.get_album_detail(album_id)
                 if detail:
@@ -153,6 +152,13 @@ class JMCosmosPlugin(Star):
                 )
                 return
 
+            # 生成文件名
+            output_name = generate_album_filename(
+                album_id=album_id,
+                password=self.config_manager.pack_password,
+                show_password=self.config_manager.filename_show_password,
+            )
+
             # 打包文件
             packer = JMPacker(
                 pack_format=self.config_manager.pack_format,
@@ -161,7 +167,7 @@ class JMCosmosPlugin(Star):
 
             pack_result = packer.pack(
                 source_dir=result.save_path,
-                output_name=f"dl_{album_id}_{int(time.time())}",
+                output_name=output_name,
             )
 
             # 发送结果消息
@@ -259,6 +265,7 @@ class JMCosmosPlugin(Star):
                 f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
             )
 
+
             # 获取章节的真正 photo_id
             chapter_info = await self.browser.get_photo_id_by_index(
                 album_id, chapter_idx
@@ -291,6 +298,14 @@ class JMCosmosPlugin(Star):
                 )
                 return
 
+            # 生成文件名（带章节号）
+            output_name = generate_album_filename(
+                album_id=album_id,
+                password=self.config_manager.pack_password,
+                chapter_idx=chapter_idx,
+                show_password=self.config_manager.filename_show_password,
+            )
+
             # 打包
             packer = JMPacker(
                 pack_format=self.config_manager.pack_format,
@@ -299,7 +314,7 @@ class JMCosmosPlugin(Star):
 
             pack_result = packer.pack(
                 source_dir=result.save_path,
-                output_name=f"dl_{album_id}_ch{chapter_idx}_{int(time.time())}",
+                output_name=output_name,
             )
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)

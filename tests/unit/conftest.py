@@ -4,7 +4,9 @@ pytest 配置和共享 fixtures
 提供测试所需的公共配置、临时目录和 mock 对象。
 """
 
+import importlib.util
 import sys
+import types
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -23,7 +25,6 @@ mock_jmcomic.JmModuleConfig = MagicMock()
 mock_jmcomic.JmcomicText = MagicMock()
 
 # 设置 __spec__ 以通过 importlib.util.find_spec 检查
-import importlib.util
 
 mock_spec = importlib.util.spec_from_loader("jmcomic", loader=None)
 mock_jmcomic.__spec__ = mock_spec
@@ -45,7 +46,6 @@ sys.path.insert(0, str(PLUGIN_ROOT))
 
 # 设置包层级结构以支持相对导入
 # 创建一个虚拟的顶级包来容纳 core 和 utils
-import types
 
 # 创建顶级虚拟包
 plugin_pkg = types.ModuleType("astrbot_plugin_jm_cosmos")
@@ -54,8 +54,8 @@ plugin_pkg.__package__ = "astrbot_plugin_jm_cosmos"
 sys.modules["astrbot_plugin_jm_cosmos"] = plugin_pkg
 
 # 预先导入核心模块并注册
-from core import base as core_base
-from core import constants as core_constants
+from core import base as core_base  # noqa: E402
+from core import constants as core_constants  # noqa: E402
 
 # 设置 core 子包
 core_pkg = types.ModuleType("astrbot_plugin_jm_cosmos.core")

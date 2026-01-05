@@ -15,19 +15,11 @@ pytestmark = [pytest.mark.integration]
 
 # 直接检测库是否可用，不依赖 packer 模块的常量
 def is_pyzipper_available():
-    try:
-        import pyzipper
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("pyzipper") is not None
 
 
 def is_pymupdf_available():
-    try:
-        import fitz
-        return True
-    except ImportError:
-        return False
+    return importlib.util.find_spec("fitz") is not None
 
 
 class TestZipPackingIntegration:

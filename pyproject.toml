@@ -1,6 +1,6 @@
 [project]
-name = "JM-Cosmos II"
-version = "2.5.5"
+name = "jm-cosmos-ii"
+version = "2.6.3"
 description = "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，基于jmcomic库"
 readme = "README.md"
 requires-python = ">=3.10"

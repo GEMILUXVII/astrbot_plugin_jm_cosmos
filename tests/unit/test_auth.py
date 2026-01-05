@@ -60,7 +60,7 @@ class TestJMAuthManagerProperties:
 
         manager = JMAuthManager(config_manager)
         # 当 jmcomic 不可用时，可能返回 None
-        client = manager.get_client()
+        _client = manager.get_client()
         # 只要不抛出异常就算通过
 
 

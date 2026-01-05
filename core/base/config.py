@@ -82,6 +82,11 @@ class JMConfigManager:
         return self.plugin_config.get("pack_password", "")
 
     @property
+    def filename_show_password(self) -> bool:
+        """是否在文件名中显示密码提示"""
+        return self.plugin_config.get("filename_show_password", False)
+
+    @property
     def auto_delete_after_send(self) -> bool:
         """发送后是否自动删除"""
         return self.plugin_config.get("auto_delete_after_send", True)

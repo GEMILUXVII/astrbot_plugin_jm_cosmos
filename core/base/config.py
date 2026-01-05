@@ -146,6 +146,11 @@ class JMConfigManager:
         return self.plugin_config.get("auto_recall_delay", 60)
 
     @property
+    def daily_download_limit(self) -> int:
+        """每日下载次数限制，0 表示不限制"""
+        return self.plugin_config.get("daily_download_limit", 0)
+
+    @property
     def cookies_file(self) -> Path:
         """Cookies文件路径"""
         return self.data_dir / "cookies.json"

@@ -138,5 +138,11 @@
     "description": "撤回延迟（秒）",
     "hint": "发送后多少秒自动撤回，建议30-120",
     "default": 60
+  },
+  "daily_download_limit": {
+    "type": "int",
+    "description": "每日下载次数限制",
+    "hint": "每个用户每天最多下载次数，0 表示不限制",
+    "default": 0
   }
 }

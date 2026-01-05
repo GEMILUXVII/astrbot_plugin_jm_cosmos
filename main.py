@@ -11,7 +11,14 @@ from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, StarTools, register
 
-from .core import JMAuthManager, JMBrowser, JMConfigManager, JMDownloadManager, JMPacker
+from .core import (
+    DownloadQuotaManager,
+    JMAuthManager,
+    JMBrowser,
+    JMConfigManager,
+    JMDownloadManager,
+    JMPacker,
+)
 from .utils import MessageFormatter, generate_album_filename, send_with_recall
 
 # 插件名称常量
@@ -22,7 +29,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.6.3",
+    "2.6.4",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -55,6 +62,9 @@ class JMCosmosPlugin(Star):
 
         # 初始化认证管理器
         self.auth_manager = JMAuthManager(self.config_manager)
+
+        # 初始化下载配额管理器
+        self.quota_manager = DownloadQuotaManager(self.data_dir / "quota.db")
 
         # 调试模式
         self.debug_mode = self.config_manager.debug_mode
@@ -117,6 +127,18 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return
 
+        # 检查下载配额（管理员豁免）
+        user_id = event.get_sender_id()
+        limit = self.config_manager.daily_download_limit
+        is_admin = str(user_id) in self.config_manager.admin_list
+        if limit > 0 and not is_admin:
+            can_download, used, total = self.quota_manager.check_quota(user_id, limit)
+            if not can_download:
+                yield event.plain_result(
+                    f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试"
+                )
+                return
+
         try:
             # 发送开始下载提示
             yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
@@ -171,6 +193,10 @@ class JMCosmosPlugin(Star):
             )
 
             # 发送结果消息
+            # 下载成功，消耗配额
+            if limit > 0:
+                self.quota_manager.consume_quota(user_id)
+
             result_msg = MessageFormatter.format_download_result(result, pack_result)
 
             if (
@@ -260,6 +286,18 @@ class JMCosmosPlugin(Star):
             yield event.plain_result("❌ 章节序号必须是数字")
             return
 
+        # 检查下载配额（管理员豁免）
+        user_id = event.get_sender_id()
+        limit = self.config_manager.daily_download_limit
+        is_admin = str(user_id) in self.config_manager.admin_list
+        if limit > 0 and not is_admin:
+            can_download, used, total = self.quota_manager.check_quota(user_id, limit)
+            if not can_download:
+                yield event.plain_result(
+                    f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试"
+                )
+                return
+
         try:
             yield event.plain_result(
                 f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
@@ -316,6 +354,10 @@ class JMCosmosPlugin(Star):
                 source_dir=result.save_path,
                 output_name=output_name,
             )
+
+            # 下载成功，消耗配额
+            if limit > 0:
+                self.quota_manager.consume_quota(user_id)
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
 

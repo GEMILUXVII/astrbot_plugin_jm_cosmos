@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.4-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.5-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -19,7 +19,7 @@
 <div align="center">
   <a href="https://pypi.org/project/jmcomic/"><img src="https://img.shields.io/badge/JMCOMIC-≥2.5.0-9C27B0?style=for-the-badge" alt="JMComic"></a>
   <a href="https://github.com/botuniverse/onebot-11"><img src="https://img.shields.io/badge/OneBotv11-AIOCQHTTP-FF5722?style=for-the-badge&logo=qq&logoColor=white" alt="OneBot v11 Support"></a>
-  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.01.05-2196F3?style=for-the-badge" alt="Updated"></a>
+  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.01.09-2196F3?style=for-the-badge" alt="Updated"></a>
 </div>
 
 ## 介绍
@@ -254,16 +254,17 @@ pip install -r requirements.txt
 | `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
 | `auto_delete_after_send` | 发送后自动删除             | `true`         |  |
 | `send_cover_preview`     | 发送封面预览               | `true`         |  |
-| `auto_recall_enabled`    | 自动撤回文件消息           | `false`        | 仅支持 QQ/NapCat 平台 |
-| `auto_recall_delay`      | 自动撤回延迟 (秒)          | `60`           | 建议 30-120 |
+| `cover_recall_enabled`   | 封面消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
+| `auto_recall_enabled`    | 文件消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
+| `auto_recall_delay`      | 撤回延迟 (秒)              | `60`           | 建议 30-120 |
 | `enabled_groups`         | 启用的群列表               | 空             | 逗号分隔，空=全部启用 |
 | `admin_only`             | 仅管理员可用               | `false`        |  |
 | `admin_list`             | 管理员 ID 列表             | 空             | 逗号分隔，不受下载限制 |
+| `jm_username`            | JM账号用户名               | 空             | 面板配置可自动登录 |
+| `jm_password`            | JM账号密码                 | 空             | 命令登录重启后失效 |
 | `search_page_size`       | 搜索结果数量               | `5`            |  |
 | `daily_download_limit`   | 每日下载限制               | `0`            | 0=不限，管理员豁免 |
 | `debug_mode`             | 调试模式                   | `false`        |  |
-| `jm_username`            | JM账号用户名               | 空             | 面板配置可自动登录 |
-| `jm_password`            | JM账号密码                 | 空             | 命令登录重启后失效 |
 
 ## 文件结构
 
@@ -374,7 +375,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.6.4** - 新增每日下载次数限制，插件管理员不受此限制
+**当前版本：v2.6.5** - 新增封面消息自动撤回功能，配置项按功能分组重排
 
 ## 注意事项
 

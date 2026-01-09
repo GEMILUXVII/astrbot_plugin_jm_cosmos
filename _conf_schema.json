@@ -85,6 +85,24 @@
     "hint": "下载前是否发送漫画封面图片预览",
     "default": true
   },
+  "cover_recall_enabled": {
+    "type": "bool",
+    "description": "封面消息自动撤回",
+    "hint": "开启后封面预览消息会自动撤回（仅支持 QQ/NapCat 平台）",
+    "default": false
+  },
+  "auto_recall_enabled": {
+    "type": "bool",
+    "description": "文件消息自动撤回",
+    "hint": "发送文件后自动撤回（仅支持 QQ/NapCat 平台）",
+    "default": false
+  },
+  "auto_recall_delay": {
+    "type": "int",
+    "description": "撤回延迟（秒）",
+    "hint": "发送后多少秒自动撤回，建议30-120",
+    "default": 60
+  },
   "enabled_groups": {
     "type": "string",
     "description": "启用的群列表",
@@ -103,18 +121,6 @@
     "hint": "以逗号分隔的用户ID列表，这些用户拥有管理员权限",
     "default": ""
   },
-  "search_page_size": {
-    "type": "int",
-    "description": "搜索结果每页数量",
-    "hint": "每次搜索返回的结果数量",
-    "default": 5
-  },
-  "debug_mode": {
-    "type": "bool",
-    "description": "调试模式",
-    "hint": "开启后会输出详细的调试日志",
-    "default": false
-  },
   "jm_username": {
     "type": "string",
     "description": "JM账号用户名",
@@ -127,22 +133,22 @@
     "hint": "配合用户名使用，支持自动登录（可选）",
     "default": ""
   },
-  "auto_recall_enabled": {
-    "type": "bool",
-    "description": "自动撤回文件消息",
-    "hint": "发送文件后自动撤回（仅支持 QQ/NapCat 平台）",
-    "default": false
-  },
-  "auto_recall_delay": {
+  "search_page_size": {
     "type": "int",
-    "description": "撤回延迟（秒）",
-    "hint": "发送后多少秒自动撤回，建议30-120",
-    "default": 60
+    "description": "搜索结果每页数量",
+    "hint": "每次搜索返回的结果数量",
+    "default": 5
   },
   "daily_download_limit": {
     "type": "int",
     "description": "每日下载次数限制",
     "hint": "每个用户每天最多下载次数，0 表示不限制",
     "default": 0
+  },
+  "debug_mode": {
+    "type": "bool",
+    "description": "调试模式",
+    "hint": "开启后会输出详细的调试日志",
+    "default": false
   }
 }

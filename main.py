@@ -29,7 +29,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.6.4",
+    "2.6.5",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -152,12 +152,25 @@ class JMCosmosPlugin(Star):
                     cover_path = await self.browser.get_album_cover(album_id, cover_dir)
 
                     if cover_path and cover_path.exists():
-                        yield event.chain_result(
+                        # 构建封面消息链
+                        from astrbot.api.event import MessageChain
+
+                        cover_chain = MessageChain(
                             [
                                 Comp.Image(file=str(cover_path)),
                                 Comp.Plain(MessageFormatter.format_album_info(detail)),
                             ]
                         )
+
+                        # 根据配置决定是否对封面消息自动撤回
+                        if self.config_manager.cover_recall_enabled:
+                            await send_with_recall(
+                                event,
+                                cover_chain,
+                                self.config_manager.auto_recall_delay,
+                            )
+                        else:
+                            yield event.chain_result(cover_chain.chain)
                     else:
                         yield event.plain_result(
                             MessageFormatter.format_album_info(detail)
@@ -496,12 +509,25 @@ class JMCosmosPlugin(Star):
                 cover_path = await self.browser.get_album_cover(album_id, cover_dir)
 
                 if cover_path and cover_path.exists():
-                    yield event.chain_result(
+                    # 构建封面消息链
+                    from astrbot.api.event import MessageChain
+
+                    cover_chain = MessageChain(
                         [
                             Comp.Image(file=str(cover_path)),
                             Comp.Plain(MessageFormatter.format_album_info(detail)),
                         ]
                     )
+
+                    # 根据配置决定是否对封面消息自动撤回
+                    if self.config_manager.cover_recall_enabled:
+                        await send_with_recall(
+                            event,
+                            cover_chain,
+                            self.config_manager.auto_recall_delay,
+                        )
+                    else:
+                        yield event.chain_result(cover_chain.chain)
                 else:
                     yield event.plain_result(MessageFormatter.format_album_info(detail))
             else:

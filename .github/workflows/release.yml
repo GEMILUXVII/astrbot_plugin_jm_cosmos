@@ -45,13 +45,24 @@ jobs:
         env:
           ARCHIVE_NAME: ${{ steps.prep.outputs.archive_name }}
         run: |
-          zip -r "$ARCHIVE_NAME" . \
-            -x ".git/*" \
-            -x ".github/*" \
-            -x ".venv/*" \
-            -x "__pycache__/*" \
-            -x "*.pyc" \
-            -x ".ruff_cache/*" \
+          # Create temp directory with plugin name
+          mkdir -p astrbot_plugin_jm_cosmos
+
+          # Copy files to temp directory (excluding unwanted files)
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='.venv' \
+                    --exclude='__pycache__' \
+                    --exclude='*.pyc' \
+                    --exclude='.ruff_cache' \
+                    --exclude='astrbot_plugin_jm_cosmos' \
+                    . astrbot_plugin_jm_cosmos/
+
+          # Create zip with the directory as root
+          zip -r "$ARCHIVE_NAME" astrbot_plugin_jm_cosmos
+
+          # Cleanup
+          rm -rf astrbot_plugin_jm_cosmos
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

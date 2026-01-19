@@ -20,7 +20,9 @@ import pytest
 for mod_name in list(sys.modules.keys()):
     if mod_name == "jmcomic" or mod_name.startswith("jmcomic."):
         # 检查是否是 mock 对象
-        if hasattr(sys.modules[mod_name], "_mock_name") or "MagicMock" in str(type(sys.modules[mod_name])):
+        if hasattr(sys.modules[mod_name], "_mock_name") or "MagicMock" in str(
+            type(sys.modules[mod_name])
+        ):
             del sys.modules[mod_name]
 
 # 同时清除可能被缓存的 core 模块

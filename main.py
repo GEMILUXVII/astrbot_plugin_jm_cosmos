@@ -29,7 +29,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.6.5",
+    "2.6.6",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -315,7 +315,6 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(
                 f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
             )
-
 
             # 获取章节的真正 photo_id
             chapter_info = await self.browser.get_photo_id_by_index(

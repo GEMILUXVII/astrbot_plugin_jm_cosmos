@@ -66,7 +66,9 @@ class TestDownloadWithPacking:
     """下载并打包集成测试"""
 
     @pytest.mark.asyncio
-    async def test_download_and_pack_zip(self, downloader, config_manager, test_album_id):
+    async def test_download_and_pack_zip(
+        self, downloader, config_manager, test_album_id
+    ):
         """测试下载并打包为 ZIP"""
         from core.packer import JMPacker
 

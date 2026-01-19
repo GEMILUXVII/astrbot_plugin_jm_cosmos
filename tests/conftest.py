@@ -5,7 +5,6 @@ tests 根目录配置
 """
 
 
-
 def pytest_configure(config):
     """注册自定义 markers"""
     config.addinivalue_line("markers", "integration: 集成测试（需要网络连接）")

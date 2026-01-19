@@ -191,7 +191,8 @@ class JMConfigManager:
 
         # 构建配置字典
         option_dict = {
-            "dir_rule": {"base_dir": str(self.download_dir), "rule": "Bd/Atitle"},
+            # 使用 Aid（本子ID）作为目录名，避免标题中的特殊字符或过长导致问题
+            "dir_rule": {"base_dir": str(self.download_dir), "rule": "Bd/Aid"},
             "download": {
                 "image": {"suffix": self.image_suffix},
                 "threading": {
@@ -210,9 +211,7 @@ class JMConfigManager:
             }
         else:
             # 显式禁用代理，覆盖 jmcomic 的默认系统代理设置
-            option_dict["client"]["postman"] = {
-                "meta_data": {"proxies": {}}
-            }
+            option_dict["client"]["postman"] = {"meta_data": {"proxies": {}}}
 
         # 使用字典构建 JmOption
         self._option = JmModuleConfig.option_class().construct(option_dict)

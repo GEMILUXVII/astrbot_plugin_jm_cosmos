@@ -16,7 +16,9 @@ class TestAuthIntegration:
     async def test_login_with_valid_credentials(self, auth_manager, has_credentials):
         """测试使用有效凭据登录"""
         if not has_credentials:
-            pytest.skip("未配置测试账号（设置 JM_TEST_USERNAME 和 JM_TEST_PASSWORD 环境变量）")
+            pytest.skip(
+                "未配置测试账号（设置 JM_TEST_USERNAME 和 JM_TEST_PASSWORD 环境变量）"
+            )
 
         success, message = await auth_manager.auto_login()
 
@@ -52,7 +54,9 @@ class TestAuthIntegration:
             assert not auth_manager.is_logged_in
 
     @pytest.mark.asyncio
-    async def test_get_favorites_requires_login(self, browser, auth_manager, has_credentials):
+    async def test_get_favorites_requires_login(
+        self, browser, auth_manager, has_credentials
+    ):
         """测试收藏夹功能（需要登录）"""
         if not has_credentials:
             pytest.skip("未配置测试账号")

@@ -307,17 +307,21 @@ day(今日) week(本周) month(本月) all(全部)
             f"🖼️ 图片: {result.image_count}",
         ]
 
-        if pack_result and pack_result.success:
-            format_name = {
-                "zip": "ZIP压缩包",
-                "pdf": "PDF文档",
-                "none": "原始文件夹",
-            }.get(pack_result.format, pack_result.format)
+        if pack_result:
+            if pack_result.success:
+                format_name = {
+                    "zip": "ZIP压缩包",
+                    "pdf": "PDF文档",
+                    "none": "原始文件夹",
+                }.get(pack_result.format, pack_result.format)
 
-            lines.append(f"📦 格式: {format_name}")
+                lines.append(f"📦 格式: {format_name}")
 
-            if pack_result.encrypted:
-                lines.append("🔐 已加密")
+                if pack_result.encrypted:
+                    lines.append("🔐 已加密")
+            else:
+                # 打包失败时提示用户
+                lines.append(f"⚠️ 打包失败: {pack_result.error_message or '未知错误'}")
 
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
 

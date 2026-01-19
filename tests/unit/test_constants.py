@@ -5,7 +5,6 @@
 """
 
 
-
 class TestCategoryMap:
     """分类映射测试"""
 
@@ -13,7 +12,17 @@ class TestCategoryMap:
         """测试分类映射包含所有必要条目"""
         from core.constants import CATEGORY_MAP
 
-        expected_keys = {"all", "doujin", "single", "short", "hanman", "meiman", "3d", "cosplay", "another"}
+        expected_keys = {
+            "all",
+            "doujin",
+            "single",
+            "short",
+            "hanman",
+            "meiman",
+            "3d",
+            "cosplay",
+            "another",
+        }
         assert set(CATEGORY_MAP.keys()) == expected_keys
 
     def test_category_map_values(self):

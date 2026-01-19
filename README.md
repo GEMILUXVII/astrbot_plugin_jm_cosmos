@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.5-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.6-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -19,7 +19,7 @@
 <div align="center">
   <a href="https://pypi.org/project/jmcomic/"><img src="https://img.shields.io/badge/JMCOMIC-≥2.5.0-9C27B0?style=for-the-badge" alt="JMComic"></a>
   <a href="https://github.com/botuniverse/onebot-11"><img src="https://img.shields.io/badge/OneBotv11-AIOCQHTTP-FF5722?style=for-the-badge&logo=qq&logoColor=white" alt="OneBot v11 Support"></a>
-  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.01.09-2196F3?style=for-the-badge" alt="Updated"></a>
+  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.01.19-2196F3?style=for-the-badge" alt="Updated"></a>
 </div>
 
 ## 介绍
@@ -375,7 +375,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.6.5** - 新增封面消息自动撤回功能，配置项按功能分组重排
+**当前版本：v2.6.6** - 修复特殊字符标题导致下载失败的问题，新增消息发送智能回退机制
 
 ## 注意事项
 

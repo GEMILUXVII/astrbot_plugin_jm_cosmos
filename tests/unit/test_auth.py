@@ -24,13 +24,17 @@ class TestJMAuthManagerInit:
         assert manager._username is None
         assert manager._client is None
 
-    def test_init_restores_session_from_cookies(self, config_manager_with_admin, data_dir):
+    def test_init_restores_session_from_cookies(
+        self, config_manager_with_admin, data_dir
+    ):
         """测试从 cookies 文件恢复会话"""
         from core.auth import JMAuthManager
 
         # 预先创建 cookies 文件
         cookies_file = data_dir / "cookies.json"
-        cookies_file.write_text(json.dumps({"username": "saved_user", "logged_in": True}))
+        cookies_file.write_text(
+            json.dumps({"username": "saved_user", "logged_in": True})
+        )
 
         manager = JMAuthManager(config_manager_with_admin)
         # 应该从文件中读取 username（但不会自动登录）

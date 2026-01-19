@@ -53,7 +53,11 @@ class TestSearchIntegration:
         if len(page1) > 0 and len(page2) > 0:
             # 获取 ID（兼容字典和对象）
             def get_id(item):
-                return item.get("id") if isinstance(item, dict) else getattr(item, "id", None)
+                return (
+                    item.get("id")
+                    if isinstance(item, dict)
+                    else getattr(item, "id", None)
+                )
 
             page1_ids = {get_id(r) for r in page1}
             page2_ids = {get_id(r) for r in page2}

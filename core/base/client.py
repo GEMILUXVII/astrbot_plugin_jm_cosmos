@@ -4,6 +4,8 @@ JMComic 客户端管理模块
 提供底层客户端管理的公共逻辑，供 downloader 和 browser 模块使用。
 """
 
+from __future__ import annotations
+
 import asyncio
 import importlib.util
 from collections.abc import Callable

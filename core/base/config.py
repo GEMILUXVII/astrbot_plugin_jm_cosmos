@@ -2,6 +2,8 @@
 JMComic 配置管理模块
 """
 
+from __future__ import annotations
+
 import importlib.util
 import os
 from pathlib import Path

@@ -4,6 +4,8 @@ JMComic 下载管理模块
 专注于下载功能：下载本子、下载章节。
 """
 
+from __future__ import annotations
+
 import importlib.util
 from collections.abc import Callable
 from dataclasses import dataclass

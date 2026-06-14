@@ -4,7 +4,6 @@ JMComic 浏览查询模块
 提供搜索、详情查看、排行榜等浏览功能。
 """
 
-import importlib.util
 from pathlib import Path
 
 from astrbot.api import logger
@@ -18,11 +17,9 @@ from .constants import (
     get_order_list,
     get_time_list,
 )
+from .jmcomic_loader import import_jmcomic, is_jmcomic_available
 
-JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
-
-if JMCOMIC_AVAILABLE:
-    from jmcomic import JmcomicText
+JMCOMIC_AVAILABLE = is_jmcomic_available()
 
 
 class JMBrowser(JMClientMixin):
@@ -113,8 +110,12 @@ class JMBrowser(JMClientMixin):
     def _get_album_detail_sync(self, album_id: str, option) -> dict | None:
         """同步获取本子详情"""
         try:
+            jmcomic = import_jmcomic()
+            if jmcomic is None:
+                return None
+
             client = option.build_jm_client()
-            parsed_id = JmcomicText.parse_to_jm_id(album_id)
+            parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
             album = client.get_album_detail(parsed_id)
 
             return {
@@ -170,8 +171,12 @@ class JMBrowser(JMClientMixin):
     ) -> tuple[str, str, int] | None:
         """同步获取章节ID"""
         try:
+            jmcomic = import_jmcomic()
+            if jmcomic is None:
+                return None
+
             client = option.build_jm_client()
-            parsed_id = JmcomicText.parse_to_jm_id(album_id)
+            parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
             album = client.get_album_detail(parsed_id)
 
             total_chapters = len(album.episode_list)
@@ -222,8 +227,12 @@ class JMBrowser(JMClientMixin):
     ) -> Path | None:
         """同步下载本子封面"""
         try:
+            jmcomic = import_jmcomic()
+            if jmcomic is None:
+                return None
+
             client = option.build_jm_client()
-            parsed_id = JmcomicText.parse_to_jm_id(album_id)
+            parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
 
             # 封面保存路径
             cover_path = save_dir / f"{parsed_id}.jpg"

@@ -4,22 +4,22 @@ JMComic 客户端管理模块
 提供底层客户端管理的公共逻辑，供 downloader 和 browser 模块使用。
 """
 
-import asyncio
-import importlib.util
-from collections.abc import Callable
-from typing import TypeVar
+from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable
+from typing import TYPE_CHECKING, TypeVar
+
+from ..jmcomic_loader import can_import_jmcomic, is_jmcomic_available
 from .config import JMConfigManager
+
+if TYPE_CHECKING:
+    from jmcomic import JmOption
 
 # 泛型类型，用于标注返回值
 T = TypeVar("T")
 
-JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
-
-if JMCOMIC_AVAILABLE:
-    from jmcomic import JmOption
-else:
-    JmOption = None
+JMCOMIC_AVAILABLE = is_jmcomic_available()
 
 
 class JMClientMixin:
@@ -61,4 +61,4 @@ class JMClientMixin:
     @staticmethod
     def is_available() -> bool:
         """检查 jmcomic 库是否可用"""
-        return JMCOMIC_AVAILABLE
+        return can_import_jmcomic()

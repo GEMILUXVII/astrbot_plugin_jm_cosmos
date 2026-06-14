@@ -2,17 +2,18 @@
 JMComic 配置管理模块
 """
 
-import importlib.util
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-JMCOMIC_AVAILABLE = importlib.util.find_spec("jmcomic") is not None
+from ..jmcomic_loader import import_jmcomic, is_jmcomic_available
 
-if JMCOMIC_AVAILABLE:
-    from jmcomic import JmModuleConfig, JmOption
-else:
-    JmOption = None
+if TYPE_CHECKING:
+    from jmcomic import JmOption
+
+JMCOMIC_AVAILABLE = is_jmcomic_available()
 
 
 class JMConfigManager:
@@ -183,7 +184,8 @@ class JMConfigManager:
         Returns:
             JmOption 实例，如果jmcomic未安装则返回None
         """
-        if not JMCOMIC_AVAILABLE:
+        jmcomic = import_jmcomic()
+        if jmcomic is None:
             return None
 
         if self._option is not None:
@@ -214,7 +216,7 @@ class JMConfigManager:
             option_dict["client"]["postman"] = {"meta_data": {"proxies": {}}}
 
         # 使用字典构建 JmOption
-        self._option = JmModuleConfig.option_class().construct(option_dict)
+        self._option = jmcomic.JmModuleConfig.option_class().construct(option_dict)
         return self._option
 
     def get_option(self) -> JmOption | None:

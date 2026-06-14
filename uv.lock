@@ -127,7 +127,7 @@ wheels = [
 
 [[package]]
 name = "jm-cosmos-ii"
-version = "2.6.3"
+version = "2.6.8"
 source = { virtual = "." }
 dependencies = [
     { name = "jmcomic" },

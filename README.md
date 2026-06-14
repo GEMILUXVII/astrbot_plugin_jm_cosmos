@@ -10,16 +10,16 @@
 
 <br>
 <div align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.7-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.8-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
 </div>
 
 <div align="center">
-  <a href="https://pypi.org/project/jmcomic/"><img src="https://img.shields.io/badge/JMCOMIC-≥2.5.0-9C27B0?style=for-the-badge" alt="JMComic"></a>
+  <a href="https://pypi.org/project/jmcomic/"><img src="https://img.shields.io/badge/JMCOMIC-≥2.6.10-9C27B0?style=for-the-badge" alt="JMComic"></a>
   <a href="https://github.com/botuniverse/onebot-11"><img src="https://img.shields.io/badge/OneBotv11-AIOCQHTTP-FF5722?style=for-the-badge&logo=qq&logoColor=white" alt="OneBot v11 Support"></a>
-  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.06.04-2196F3?style=for-the-badge" alt="Updated"></a>
+  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.06.14-2196F3?style=for-the-badge" alt="Updated"></a>
 </div>
 
 ## 介绍
@@ -75,6 +75,9 @@ pip install -r requirements.txt
 | `jmcomic>=2.6.10` | JM 漫画下载核心库 |
 | `pymupdf>=1.23.0` | PDF 打包支持      |
 | `pyzipper>=0.3.6` | 加密 ZIP 支持     |
+
+> [!NOTE]
+> 从 v2.6.8 起，插件在首次安装、依赖尚未就绪时不会因 `jmcomic` 缺失而导入失败；相关功能会在运行时提示依赖未安装。下载、搜索和登录功能仍需要安装 `jmcomic>=2.6.10`。
 
 > [!WARNING]
 > 如果不安装 `pyzipper`，默认可发送 zip 文件，但 ZIP 文件将**无法加密**！
@@ -375,7 +378,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.6.7** - 修复 metadata.yaml 中非法插件名称导致无法安装的问题
+**当前版本：v2.6.8** - 修复首次安装时 `jmcomic` 依赖未就绪导致插件导入失败的问题
 
 ## 注意事项
 

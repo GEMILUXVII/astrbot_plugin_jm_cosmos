@@ -8,6 +8,7 @@ from .auth import JMAuthManager
 from .base import JMClientMixin, JMConfigManager
 from .browser import JMBrowser
 from .downloader import DownloadResult, JMDownloadManager
+from .errors import classify_exception
 from .jmcomic_loader import is_jmcomic_available
 from .packer import JMPacker
 from .quota import DownloadQuotaManager
@@ -25,4 +26,5 @@ __all__ = [
     "JMDownloadManager",
     "DownloadResult",
     "JMPacker",
+    "classify_exception",
 ]

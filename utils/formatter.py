@@ -318,6 +318,15 @@ day(今日) week(本周) month(本月) all(全部)
             f"🖼️ 图片: {result.image_count}",
         ]
 
+        # 下载完整性提示
+        if not getattr(result, "all_success", True):
+            failed = getattr(result, "failed_images", 0)
+            if failed:
+                lines[0] = "⚠️ 下载完成（部分失败）"
+                lines.append(f"⚠️ 失败图片/章节: {failed}")
+            else:
+                lines[0] = "⚠️ 下载完成（可能不完整）"
+
         if pack_result:
             if pack_result.success:
                 format_name = {

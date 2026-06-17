@@ -18,6 +18,7 @@ from .core import (
     JMConfigManager,
     JMDownloadManager,
     JMPacker,
+    classify_exception,
 )
 from .utils import MessageFormatter, generate_album_filename, send_with_recall
 
@@ -257,9 +258,8 @@ class JMCosmosPlugin(Star):
                 import traceback
 
                 logger.error(traceback.format_exc())
-            yield event.plain_result(
-                MessageFormatter.format_error("download_failed", str(e))
-            )
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     @filter.command("jmc")
     async def download_photo_command(
@@ -412,9 +412,8 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"下载章节失败: {e}")
-            yield event.plain_result(
-                MessageFormatter.format_error("download_failed", str(e))
-            )
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     @filter.command("jms")
     async def search_command(

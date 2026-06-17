@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from .base import JMClientMixin, JMConfigManager
+from .errors import classify_exception
 from .jmcomic_loader import import_jmcomic, is_jmcomic_available
 
 if TYPE_CHECKING:
@@ -33,6 +34,9 @@ class DownloadResult:
     save_path: Path
     cover_path: Path | None = None
     error_message: str | None = None
+    # 下载完整性：all_success 为 False 表示有图片/章节未成功下载
+    all_success: bool = True
+    failed_images: int = 0
 
 
 class JMDownloadManager(JMClientMixin):
@@ -127,9 +131,16 @@ class JMDownloadManager(JMClientMixin):
                 )
 
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
-            album, downloader = jmcomic.download_album(parsed_id, option)
+            # check_exception=False: 让部分图片失败不抛异常，由下方读取下载器统计
+            album, downloader = jmcomic.download_album(
+                parsed_id, option, check_exception=False
+            )
 
             save_path = Path(option.dir_rule.decide_album_root_dir(album))
+
+            failed_images = len(getattr(downloader, "download_failed_image", []))
+            failed_images += len(getattr(downloader, "download_failed_photo", []))
+            all_success = bool(getattr(downloader, "all_success", True))
 
             return DownloadResult(
                 success=True,
@@ -139,9 +150,12 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=len(album),
                 image_count=album.page_count,
                 save_path=save_path,
+                all_success=all_success,
+                failed_images=failed_images,
             )
 
         except Exception as e:
+            _, friendly = classify_exception(e)
             return DownloadResult(
                 success=False,
                 album_id=album_id,
@@ -150,7 +164,7 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e),
+                error_message=friendly,
             )
 
     async def download_photo(
@@ -225,10 +239,16 @@ class JMDownloadManager(JMClientMixin):
                 )
 
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(photo_id)
-            photo, downloader = jmcomic.download_photo(parsed_id, option)
+            photo, downloader = jmcomic.download_photo(
+                parsed_id, option, check_exception=False
+            )
 
             save_path = Path(option.decide_image_save_dir(photo))
             image_count = len(photo.images) if hasattr(photo, "images") else 0
+
+            failed_images = len(getattr(downloader, "download_failed_image", []))
+            failed_images += len(getattr(downloader, "download_failed_photo", []))
+            all_success = bool(getattr(downloader, "all_success", True))
 
             return DownloadResult(
                 success=True,
@@ -240,9 +260,12 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=1,
                 image_count=image_count,
                 save_path=save_path,
+                all_success=all_success,
+                failed_images=failed_images,
             )
 
         except Exception as e:
+            _, friendly = classify_exception(e)
             return DownloadResult(
                 success=False,
                 album_id=photo_id,
@@ -251,5 +274,5 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e),
+                error_message=friendly,
             )

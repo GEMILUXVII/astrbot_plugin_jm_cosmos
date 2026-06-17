@@ -856,13 +856,16 @@ class JMCosmosPlugin(Star):
 
     @filter.command("jmfav")
     async def favorites_command(
-        self, event: AstrMessageEvent, page: int = 1, folder_id: str = "0"
+        self, event: AstrMessageEvent, arg1: str = None, arg2: str = None
     ):
         """
-        查看我的收藏
+        查看我的收藏 / 收藏本子
 
-        用法: /jmfav [页码] [收藏夹ID]
+        用法:
+          /jmfav [页码] [收藏夹ID]   查看收藏
+          /jmfav add <本子ID>        收藏指定本子
         示例: /jmfav 1
+        示例: /jmfav add 123456
         """
         # 权限检查
         has_perm, error_msg = self._check_permission(event)
@@ -876,18 +879,39 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(f"❌ {login_msg}\n💡 请先使用 /jmlogin 登录")
             return
 
-        # 验证页码
-        try:
-            page = int(page)
-            if page < 1:
+        client = self.auth_manager.get_client()
+
+        # 子命令：收藏本子
+        if arg1 is not None and str(arg1).lower().strip() == "add":
+            album_id = str(arg2).strip() if arg2 is not None else ""
+            if not album_id.isdigit():
+                yield event.plain_result(
+                    "❌ 请提供有效的本子ID\n用法: /jmfav add <本子ID>\n示例: /jmfav add 123456"
+                )
+                return
+
+            yield event.plain_result(f"⭐ 正在收藏本子 {album_id}...")
+            success, msg = await self.browser.add_favorite(client, album_id)
+            if success:
+                yield event.plain_result(f"✅ {msg}")
+            else:
+                yield event.plain_result(f"❌ 收藏失败: {msg}")
+            return
+
+        # 默认：查看收藏夹
+        page = 1
+        folder_id = "0"
+        if arg1 is not None:
+            try:
+                page = max(1, int(arg1))
+            except (ValueError, TypeError):
                 page = 1
-        except (ValueError, TypeError):
-            page = 1
+        if arg2 is not None:
+            folder_id = str(arg2).strip() or "0"
 
         try:
             yield event.plain_result(f"⭐ 正在获取收藏夹第{page}页...")
 
-            client = self.auth_manager.get_client()
             albums, folders = await self.browser.get_favorites(client, page, folder_id)
 
             result_msg = MessageFormatter.format_favorites(albums, folders, page)

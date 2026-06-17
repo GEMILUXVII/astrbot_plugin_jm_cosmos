@@ -290,6 +290,7 @@ day(今日) week(本周) month(本月) all(全部)
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
         lines.append("💡 使用 /jmfav <页码> 翻页")
         lines.append("💡 使用 /jmfav <页码> <收藏夹ID> 查看特定收藏夹")
+        lines.append("💡 使用 /jmfav add <本子ID> 收藏本子")
 
         return "\n".join(lines)
 

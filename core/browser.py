@@ -488,3 +488,52 @@ class JMBrowser(JMClientMixin):
         except Exception as e:
             logger.error(f"获取收藏夹失败: {e}")
             return [], []
+
+    async def add_favorite(
+        self, client, album_id: str, folder_id: str = "0"
+    ) -> tuple[bool, str]:
+        """
+        收藏指定本子
+
+        Args:
+            client: 已登录的客户端
+            album_id: 本子ID
+            folder_id: 收藏夹ID
+
+        Returns:
+            (成功与否, 消息)
+        """
+        if not self.is_available():
+            return False, "jmcomic 库未安装"
+
+        try:
+            return await self._run_sync(
+                self._add_favorite_sync, client, album_id, folder_id
+            )
+        except Exception as e:
+            logger.error(f"收藏操作失败: {e}")
+            return False, str(e)
+
+    def _add_favorite_sync(
+        self, client, album_id: str, folder_id: str
+    ) -> tuple[bool, str]:
+        """同步收藏本子（JM 的 /favorite 接口为切换语义）"""
+        try:
+            jmcomic = import_jmcomic()
+            if jmcomic is None:
+                return False, "jmcomic 库未安装"
+
+            parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
+            resp = client.add_favorite_album(parsed_id, folder_id)
+
+            # 尝试读取服务端返回的提示信息（不同客户端结构不同，失败则回退通用文案）
+            msg = ""
+            try:
+                msg = resp.model_data.msg
+            except Exception:
+                msg = ""
+
+            return True, msg or f"操作成功（本子 {album_id}）"
+        except Exception as e:
+            logger.error(f"收藏操作失败: {e}")
+            return False, str(e)

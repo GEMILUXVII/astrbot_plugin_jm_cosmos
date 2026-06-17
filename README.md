@@ -10,7 +10,7 @@
 
 <br>
 <div align="center">
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.6.8-E91E63?style=for-the-badge" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/VERSION-v2.7.0-E91E63?style=for-the-badge" alt="Version"></a>
   <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-009688?style=for-the-badge" alt="License"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/PYTHON-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/AstrBotDevs/AstrBot"><img src="https://img.shields.io/badge/AstrBot-Compatible-00BFA5?style=for-the-badge&logo=robot&logoColor=white" alt="AstrBot Compatible"></a>
@@ -19,7 +19,7 @@
 <div align="center">
   <a href="https://pypi.org/project/jmcomic/"><img src="https://img.shields.io/badge/JMCOMIC-≥2.6.10-9C27B0?style=for-the-badge" alt="JMComic"></a>
   <a href="https://github.com/botuniverse/onebot-11"><img src="https://img.shields.io/badge/OneBotv11-AIOCQHTTP-FF5722?style=for-the-badge&logo=qq&logoColor=white" alt="OneBot v11 Support"></a>
-  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.06.14-2196F3?style=for-the-badge" alt="Updated"></a>
+  <a href="https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos"><img src="https://img.shields.io/badge/UPDATED-2026.06.17-2196F3?style=for-the-badge" alt="Updated"></a>
 </div>
 
 ## 介绍
@@ -39,20 +39,23 @@ JM-Cosmos II 是一个基于 AstrBot 开发的 JM 漫画下载插件，支持漫
 
 ### 核心功能
 
-- **漫画搜索** - 通过关键词搜索 JM 漫画
+- **漫画搜索** - 通过关键词搜索 JM 漫画，支持按标签/作者/角色/作品搜索
 - **漫画详情** - 查看漫画信息、标签、作者等
-- **本子下载** - 下载完整本子（/jm）或单章节（/jmc）
-- **自动打包** - 下载完成后自动打包为 ZIP 或 PDF
+- **本子下载** - 下载完整本子（/jm）或单章节（/jmc），支持实时进度提示
+- **自动打包** - 下载完成后自动打包为 ZIP、PDF 或长图
 - **加密保护** - 支持为 ZIP/PDF 设置密码加密
 - **自动发送** - 打包后自动发送文件到聊天
 
 ### 高级功能
 
-- **代理支持** - 支持 HTTP/SOCKS5 代理
+- **更新订阅** - 订阅本子，后台检查更新并主动推送，支持增量下载新章节
+- **代理与域名** - 支持 HTTP/SOCKS5 代理，可自定义域名与重试次数
+- **收藏管理** - 查看收藏夹，支持收藏本子
 - **权限控制** - 可选的管理员权限和群组白名单
 - **自动清理** - 发送后自动删除本地文件
 - **自动撤回** - 发送文件后自动撤回消息
 - **封面预览** - 下载前展示漫画封面和详情
+- **错误分类** - 区分本子不存在、网络失败、部分下载失败等情况并给出可读提示
 - **调试模式** - 详细日志输出便于问题排查
 
 ## 安装方法
@@ -118,13 +121,17 @@ pip install -r requirements.txt
 ### 搜索与浏览
 
 #### `/jms <关键词> [页码]`
-搜索漫画。
+搜索漫画。支持搜索类型前缀：`tag:`（标签）、`author:`（作者）、`actor:`（登场角色）、`work:`（作品）。
 
 ```
 /jms 标签名
 /jms 作者名
-/jms 标签名 2    # 搜索第2页
+/jms 标签名 2       # 搜索第2页
+/jms tag:全彩       # 按标签搜索
+/jms author:某作者 2 # 按作者搜索第2页
 ```
+
+不带前缀时为综合搜索，行为与旧版一致。
 
 ---
 
@@ -139,18 +146,21 @@ pip install -r requirements.txt
 
 ---
 
-#### `/jmrank [类型] [页码]`
-查看排行榜。
+#### `/jmrank [类型] [分类] [页码]`
+查看排行榜。参数顺序灵活，智能识别。
 
-| 参数     | 可选值         | 默认值 |
-| -------- | -------------- | ------ |
-| 类型     | `week` `month` | `week` |
-| 页码     | 正整数         | `1`    |
+| 参数 | 可选值                                                                     | 默认值 |
+| ---- | -------------------------------------------------------------------------- | ------ |
+| 类型 | `day` `week` `month`                                                       | `week` |
+| 分类 | `all` `doujin` `single` `short` `hanman` `meiman` `3d` `cosplay` `another` | `all`  |
+| 页码 | 正整数                                                                     | `1`    |
 
 ```
 /jmrank              # 查看周排行榜第1页
 /jmrank week         # 查看周排行榜第1页
 /jmrank month 2      # 查看月排行榜第2页
+/jmrank week hanman  # 查看本周韩漫排行榜
+/jmrank day hanman 2 # 查看今日韩漫排行榜第2页
 ```
 
 ---
@@ -214,8 +224,8 @@ pip install -r requirements.txt
 
 ---
 
-#### `/jmfav [页码] [收藏夹ID]`
-查看我的收藏（需要先登录）。
+#### `/jmfav [页码] [收藏夹ID]` · `/jmfav add <本子ID>`
+查看我的收藏，或将本子加入收藏夹（需要先登录）。
 
 | 参数       | 说明                     | 默认值       |
 | ---------- | ------------------------ | ------------ |
@@ -226,7 +236,49 @@ pip install -r requirements.txt
 /jmfav               # 查看全部收藏第1页
 /jmfav 2             # 查看全部收藏第2页
 /jmfav 1 12345       # 查看收藏夹ID为12345的第1页
+/jmfav add 123456    # 收藏本子 123456
 ```
+
+---
+
+### 订阅功能
+
+#### `/jmsub <ID>`
+订阅本子更新。后台会定期检查该本子是否有新章节，发现更新时在当前会话推送提醒。
+
+```
+/jmsub 123456
+```
+
+---
+
+#### `/jmunsub <ID>`
+取消订阅。
+
+```
+/jmunsub 123456
+```
+
+---
+
+#### `/jmsublist`
+查看当前会话的订阅列表（含已记录章节数）。
+
+```
+/jmsublist
+```
+
+---
+
+#### `/jmupdate <ID>`
+增量下载：仅下载已订阅记录之后的新增章节并打包发送。未订阅时等同于下载全部章节。
+
+```
+/jmupdate 123456
+```
+
+> [!NOTE]
+> 后台检查间隔由 `subscribe_check_interval` 配置（秒，默认 3600，设为 `0` 关闭后台检查）。主动推送依赖平台支持，`qq_official` 等平台可能不支持。
 
 ---
 
@@ -248,15 +300,18 @@ pip install -r requirements.txt
 | `download_dir`           | 漫画下载目录               | `./downloads`  |  |
 | `image_suffix`           | 图片格式 (.jpg/.png/.webp) | `.jpg`         | webp 仅支持 ZIP 打包 |
 | `client_type`            | 客户端类型 (api/html)      | `api`          | api 兼容性好，html 效率高但限 IP |
+| `client_domain`          | 自定义域名列表             | 空             | 逗号分隔，留空自动选择；默认域名被墙时手动指定 |
+| `retry_times`            | 请求重试次数               | `0`            | 0=使用 jmcomic 默认值(5) |
 | `use_proxy`              | 是否使用代理               | `false`        |  |
 | `proxy_url`              | 代理服务器地址             | 空             | 格式: `http://host:port` |
 | `max_concurrent_photos`  | 最大并发章节数             | `3`            | 建议 3-5 |
 | `max_concurrent_images`  | 最大并发图片数             | `5`            | 建议 5-10 |
-| `pack_format`            | 打包格式 (zip/pdf/none)    | `zip`          |  |
+| `pack_format`            | 打包格式 (zip/pdf/long_img/none) | `zip`    | long_img 为纵向长图，过长自动分段打包为 zip |
 | `pack_password`          | 打包密码                   | 空             | **强烈建议设置，可降低风控** |
 | `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
 | `auto_delete_after_send` | 发送后自动删除             | `true`         |  |
 | `send_cover_preview`     | 发送封面预览               | `true`         |  |
+| `show_download_progress` | 发送下载进度               | `true`         | 按 25% 步进推送，关闭可减少刷屏 |
 | `cover_recall_enabled`   | 封面消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
 | `auto_recall_enabled`    | 文件消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
 | `auto_recall_delay`      | 撤回延迟 (秒)              | `60`           | 建议 30-120 |
@@ -267,6 +322,7 @@ pip install -r requirements.txt
 | `jm_password`            | JM账号密码                 | 空             | 命令登录重启后失效 |
 | `search_page_size`       | 搜索结果数量               | `5`            |  |
 | `daily_download_limit`   | 每日下载限制               | `0`            | 0=不限，管理员豁免 |
+| `subscribe_check_interval` | 订阅检查间隔 (秒)        | `3600`         | 后台检查订阅更新间隔，0=关闭 |
 | `debug_mode`             | 调试模式                   | `false`        |  |
 
 ## 文件结构
@@ -280,11 +336,14 @@ astrbot_plugin_jm_cosmos/
 ├── core/                # 核心模块
 │   ├── __init__.py
 │   ├── auth.py          # 认证管理器
-│   ├── browser.py       # 浏览查询器（搜索、排行、详情）
+│   ├── browser.py       # 浏览查询器（搜索、排行、详情、收藏）
 │   ├── constants.py     # 常量定义
-│   ├── downloader.py    # 下载管理器
-│   ├── packer.py        # 打包模块 (ZIP/PDF)
+│   ├── downloader.py    # 下载管理器（含进度与增量下载）
+│   ├── errors.py        # jmcomic 异常分类
+│   ├── jmcomic_loader.py # jmcomic 可选依赖加载
+│   ├── packer.py        # 打包模块 (ZIP/PDF/长图)
 │   ├── quota.py         # 下载配额管理器
+│   ├── subscribe.py     # 订阅管理器
 │   └── base/            # 基础模块
 │       ├── client.py    # 客户端混入类
 │       └── config.py    # 配置管理器
@@ -378,7 +437,7 @@ proxy_url: http://127.0.0.1:7890
 
 查看完整更新日志：[CHANGELOG.md](./CHANGELOG.md)
 
-**当前版本：v2.6.8** - 修复首次安装时 `jmcomic` 依赖未就绪导致插件导入失败的问题
+**当前版本：v2.7.0** - 新增更新订阅、增量下载、搜索类型前缀、排行榜分类、收藏本子、长图打包、下载进度与错误分类
 
 ## 注意事项
 

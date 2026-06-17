@@ -97,6 +97,12 @@
     "hint": "下载前是否发送漫画封面图片预览",
     "default": true
   },
+  "show_download_progress": {
+    "type": "bool",
+    "description": "发送下载进度",
+    "hint": "下载本子时按 25% 步进推送进度消息，关闭可减少消息刷屏",
+    "default": true
+  },
   "cover_recall_enabled": {
     "type": "bool",
     "description": "封面消息自动撤回",

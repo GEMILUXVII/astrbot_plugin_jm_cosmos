@@ -6,6 +6,7 @@ JMComic 下载管理模块
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,46 @@ if TYPE_CHECKING:
     from jmcomic import JmOption
 
 JMCOMIC_AVAILABLE = is_jmcomic_available()
+
+_PROGRESS_DOWNLOADER_CLASS = None
+
+
+def _get_progress_downloader_class(jmcomic):
+    """惰性构建一个带进度计数的 JmDownloader 子类（jmcomic 可用时才能定义）。"""
+    global _PROGRESS_DOWNLOADER_CLASS
+    if _PROGRESS_DOWNLOADER_CLASS is not None:
+        return _PROGRESS_DOWNLOADER_CLASS
+
+    class _ProgressDownloader(jmcomic.JmDownloader):
+        """记录已下载图片数与总数，供上层轮询展示进度。"""
+
+        def __init__(self, option):
+            super().__init__(option)
+            self.total_images = 0
+            self.downloaded_images = 0
+
+        def before_album(self, album):
+            super().before_album(album)
+            try:
+                self.total_images = album.page_count
+            except Exception:
+                pass
+
+        def before_photo(self, photo):
+            super().before_photo(photo)
+            # 单章下载没有 album，用章节图片数作为总数
+            if not self.total_images:
+                try:
+                    self.total_images = len(photo)
+                except Exception:
+                    pass
+
+        def after_image(self, image, img_save_path):
+            super().after_image(image, img_save_path)
+            self.downloaded_images += 1
+
+    _PROGRESS_DOWNLOADER_CLASS = _ProgressDownloader
+    return _PROGRESS_DOWNLOADER_CLASS
 
 
 @dataclass
@@ -55,14 +96,14 @@ class JMDownloadManager(JMClientMixin):
     async def download_album(
         self,
         album_id: str,
-        progress_callback: Callable[[str, int, int], Any] | None = None,
+        progress_callback: Callable[[int, int], Any] | None = None,
     ) -> DownloadResult:
         """
         异步下载本子
 
         Args:
             album_id: 本子ID
-            progress_callback: 进度回调函数 (status, current, total)
+            progress_callback: 进度回调协程 (current, total)，按 25% 步进调用
 
         Returns:
             DownloadResult 下载结果
@@ -93,11 +134,12 @@ class JMDownloadManager(JMClientMixin):
                     error_message="无法创建下载配置",
                 )
 
-            return await self._run_sync(
-                self._download_album_sync, album_id, option, progress_callback
+            return await self._run_with_progress(
+                self._download_album_sync, (album_id, option), progress_callback
             )
 
         except Exception as e:
+            _, friendly = classify_exception(e)
             return DownloadResult(
                 success=False,
                 album_id=album_id,
@@ -106,14 +148,14 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e),
+                error_message=friendly,
             )
 
     def _download_album_sync(
         self,
         album_id: str,
         option: JmOption,
-        progress_callback: Callable | None = None,
+        progress_holder: dict | None = None,
     ) -> DownloadResult:
         """同步下载本子（在线程池中执行）"""
         try:
@@ -131,10 +173,15 @@ class JMDownloadManager(JMClientMixin):
                 )
 
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
-            # check_exception=False: 让部分图片失败不抛异常，由下方读取下载器统计
-            album, downloader = jmcomic.download_album(
-                parsed_id, option, check_exception=False
-            )
+            downloader_cls = _get_progress_downloader_class(jmcomic)
+            downloader = downloader_cls(option)
+            # 暴露下载器实例供上层轮询进度
+            if progress_holder is not None:
+                progress_holder["downloader"] = downloader
+
+            # 直接驱动下载器（不使用 check_exception），部分失败由下方统计读取
+            with downloader:
+                album = downloader.download_album(parsed_id)
 
             save_path = Path(option.dir_rule.decide_album_root_dir(album))
 
@@ -170,14 +217,14 @@ class JMDownloadManager(JMClientMixin):
     async def download_photo(
         self,
         photo_id: str,
-        progress_callback: Callable[[str, int, int], Any] | None = None,
+        progress_callback: Callable[[int, int], Any] | None = None,
     ) -> DownloadResult:
         """
         异步下载章节
 
         Args:
             photo_id: 章节ID
-            progress_callback: 进度回调函数
+            progress_callback: 进度回调协程 (current, total)
 
         Returns:
             DownloadResult 下载结果
@@ -208,9 +255,12 @@ class JMDownloadManager(JMClientMixin):
                     error_message="无法创建下载配置",
                 )
 
-            return await self._run_sync(self._download_photo_sync, photo_id, option)
+            return await self._run_with_progress(
+                self._download_photo_sync, (photo_id, option), progress_callback
+            )
 
         except Exception as e:
+            _, friendly = classify_exception(e)
             return DownloadResult(
                 success=False,
                 album_id=photo_id,
@@ -219,10 +269,15 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=0,
                 image_count=0,
                 save_path=Path(),
-                error_message=str(e),
+                error_message=friendly,
             )
 
-    def _download_photo_sync(self, photo_id: str, option: JmOption) -> DownloadResult:
+    def _download_photo_sync(
+        self,
+        photo_id: str,
+        option: JmOption,
+        progress_holder: dict | None = None,
+    ) -> DownloadResult:
         """同步下载章节"""
         try:
             jmcomic = import_jmcomic()
@@ -239,9 +294,13 @@ class JMDownloadManager(JMClientMixin):
                 )
 
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(photo_id)
-            photo, downloader = jmcomic.download_photo(
-                parsed_id, option, check_exception=False
-            )
+            downloader_cls = _get_progress_downloader_class(jmcomic)
+            downloader = downloader_cls(option)
+            if progress_holder is not None:
+                progress_holder["downloader"] = downloader
+
+            with downloader:
+                photo = downloader.download_photo(parsed_id)
 
             save_path = Path(option.decide_image_save_dir(photo))
             image_count = len(photo.images) if hasattr(photo, "images") else 0
@@ -276,3 +335,42 @@ class JMDownloadManager(JMClientMixin):
                 save_path=Path(),
                 error_message=friendly,
             )
+
+    async def _run_with_progress(
+        self,
+        sync_func: Callable[..., DownloadResult],
+        args: tuple,
+        progress_callback: Callable[[int, int], Any] | None,
+    ) -> DownloadResult:
+        """在线程池执行同步下载，并按需轮询下载器进度回调上层。"""
+        progress_holder: dict = {}
+        task = asyncio.create_task(self._run_sync(sync_func, *args, progress_holder))
+        if progress_callback is not None:
+            await self._poll_progress(task, progress_holder, progress_callback)
+        return await task
+
+    @staticmethod
+    async def _poll_progress(
+        task: asyncio.Task,
+        progress_holder: dict,
+        progress_callback: Callable[[int, int], Any],
+        interval: float = 2.0,
+    ) -> None:
+        """轮询下载器的图片计数，按 25% 步进回调进度（避免刷屏）。"""
+        last_bucket = -1
+        while not task.done():
+            await asyncio.sleep(interval)
+            downloader = progress_holder.get("downloader")
+            if downloader is None:
+                continue
+            total = getattr(downloader, "total_images", 0)
+            done = getattr(downloader, "downloaded_images", 0)
+            if total <= 0 or done <= 0 or done >= total:
+                continue
+            bucket = int(done * 4 / total)
+            if bucket != last_bucket:
+                last_bucket = bucket
+                try:
+                    await progress_callback(done, total)
+                except Exception:
+                    pass

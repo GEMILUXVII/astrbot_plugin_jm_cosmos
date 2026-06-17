@@ -109,6 +109,11 @@ class JMConfigManager:
         return self.plugin_config.get("send_cover_preview", True)
 
     @property
+    def show_download_progress(self) -> bool:
+        """是否发送下载进度消息"""
+        return self.plugin_config.get("show_download_progress", True)
+
+    @property
     def cover_recall_enabled(self) -> bool:
         """是否启用封面消息自动撤回"""
         return self.plugin_config.get("cover_recall_enabled", False)

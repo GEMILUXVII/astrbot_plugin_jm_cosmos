@@ -94,6 +94,31 @@ class JMCosmosPlugin(Star):
 
         return True, ""
 
+    def _make_progress_callback(self, event: AstrMessageEvent):
+        """构建下载进度回调（受配置开关控制），未启用时返回 None"""
+        if not self.config_manager.show_download_progress:
+            return None
+
+        from astrbot.api.event import MessageChain
+
+        async def _on_progress(done: int, total: int) -> None:
+            try:
+                await event.send(
+                    MessageChain(
+                        [
+                            Comp.Plain(
+                                MessageFormatter.format_download_progress(
+                                    "下载中", done, total
+                                )
+                            )
+                        ]
+                    )
+                )
+            except Exception as send_err:
+                logger.debug(f"发送下载进度失败: {send_err}")
+
+        return _on_progress
+
     @filter.command("jmhelp")
     async def help_command(self, event: AstrMessageEvent):
         """显示帮助信息"""
@@ -178,7 +203,9 @@ class JMCosmosPlugin(Star):
                         )
 
             # 执行下载
-            result = await self.download_manager.download_album(album_id)
+            result = await self.download_manager.download_album(
+                album_id, self._make_progress_callback(event)
+            )
 
             if not result.success:
                 yield event.plain_result(
@@ -338,7 +365,9 @@ class JMCosmosPlugin(Star):
             )
 
             # 使用真正的 photo_id 下载
-            result = await self.download_manager.download_photo(photo_id)
+            result = await self.download_manager.download_photo(
+                photo_id, self._make_progress_callback(event)
+            )
 
             if not result.success:
                 yield event.plain_result(

@@ -473,23 +473,27 @@ class JMBrowser(JMClientMixin):
     def _add_favorite_sync(
         self, client, album_id: str, folder_id: str
     ) -> tuple[bool, str]:
-        """同步收藏本子（JM 的 /favorite 接口为切换语义）"""
+        """同步收藏本子。
+
+        统一走 HTML 客户端的 /ajax/favorite_album：API 客户端的 /favorite 在
+        jmcomic 现有实现下会以 GET 发送 aid，等同于“列收藏”，返回的响应没有
+        status 字段，导致 KeyError('status')。登录会话已存于 option，HTML
+        客户端会带上同一 cookie。传入的 client 仅作占位，这里不使用。
+        """
         try:
             jmcomic = import_jmcomic()
             if jmcomic is None:
                 return False, "jmcomic 库未安装"
 
+            option = self._get_option()
+            if option is None:
+                return False, "无法创建下载配置"
+
+            html_client = option.new_jm_client(impl="html")
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
-            resp = client.add_favorite_album(parsed_id, folder_id)
-
-            # 尝试读取服务端返回的提示信息（不同客户端结构不同，失败则回退通用文案）
-            msg = ""
-            try:
-                msg = resp.model_data.msg
-            except Exception:
-                msg = ""
-
-            return True, msg or f"操作成功（本子 {album_id}）"
+            # HTML 客户端的 add_favorite_album 在失败时会抛出带可读 msg 的异常
+            html_client.add_favorite_album(parsed_id, folder_id)
+            return True, f"收藏操作成功（本子 {album_id}）"
         except Exception as e:
             logger.error(f"收藏操作失败: {e}")
             return False, str(e)

@@ -137,7 +137,7 @@ class JMAuthManager(JMClientMixin):
             if option is None:
                 return False, "无法创建配置"
 
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             client.login(username, password)
 
             # 保存登录状态
@@ -151,6 +151,12 @@ class JMAuthManager(JMClientMixin):
                 cookies = dict(client["cookies"])
             except Exception as e:
                 logger.debug(f"读取登录 cookies 失败: {e}")
+            if cookies:
+                # 注入 option，使后续按操作新建的 client 都带上会话
+                try:
+                    option.update_cookies(cookies)
+                except Exception as e:
+                    logger.debug(f"更新 option cookies 失败: {e}")
             self._save_session(cookies)
 
             logger.info(f"用户 {username} 登录成功")

@@ -37,12 +37,12 @@ class JMClientMixin:
         return self.config.get_option()
 
     def _build_client(self, option: JmOption | None = None):
-        """构建 JM 客户端"""
+        """构建 JM 客户端（每次新建，避免并发操作共享同一 client 引发竞态）"""
         if option is None:
             option = self._get_option()
         if option is None:
             return None
-        return option.build_jm_client()
+        return option.new_jm_client()
 
     async def _run_sync(self, func: Callable[..., T], *args, **kwargs) -> T:
         """

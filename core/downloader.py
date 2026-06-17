@@ -39,6 +39,10 @@ def _get_progress_downloader_class(jmcomic):
             self.downloaded_images = 0
             self.skip_photos = 0  # 增量下载时跳过的前置章节数
 
+        def create_client(self):
+            # 每个下载使用独立 client，避免与其他并发操作共享状态
+            return self.option.new_jm_client()
+
         def do_filter(self, detail):
             # 增量下载：仅对本子跳过前 skip_photos 个章节，其余不过滤
             if self.skip_photos and detail.is_album():

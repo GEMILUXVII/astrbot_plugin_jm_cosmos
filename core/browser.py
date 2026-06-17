@@ -70,7 +70,7 @@ class JMBrowser(JMClientMixin):
     ) -> list[dict]:
         """同步搜索本子"""
         try:
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             search_method = {
                 "site": client.search_site,
                 "tag": client.search_tag,
@@ -128,7 +128,7 @@ class JMBrowser(JMClientMixin):
             if jmcomic is None:
                 return None
 
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
             album = client.get_album_detail(parsed_id)
 
@@ -189,7 +189,7 @@ class JMBrowser(JMClientMixin):
             if jmcomic is None:
                 return None
 
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
             album = client.get_album_detail(parsed_id)
 
@@ -245,7 +245,7 @@ class JMBrowser(JMClientMixin):
             if jmcomic is None:
                 return None
 
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
 
             # 封面保存路径
@@ -334,7 +334,7 @@ class JMBrowser(JMClientMixin):
     ) -> list[dict]:
         """同步获取排行榜（method_name 为 jmcomic 客户端的排行方法名）"""
         try:
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             ranking_page = getattr(client, method_name)(page, category)
 
             results = []
@@ -401,7 +401,7 @@ class JMBrowser(JMClientMixin):
     ) -> list[dict]:
         """同步获取分类浏览结果"""
         try:
-            client = option.build_jm_client()
+            client = option.new_jm_client()
             category_page = client.categories_filter(
                 page=page,
                 time=time,

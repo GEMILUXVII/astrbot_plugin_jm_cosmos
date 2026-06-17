@@ -253,106 +253,51 @@ class JMBrowser(JMClientMixin):
 
     # ==================== 排行榜功能 ====================
 
-    async def get_week_ranking(self, page: int = 1) -> list[dict]:
+    async def get_week_ranking(self, page: int = 1, category: str = "all") -> list[dict]:
         """
         获取周排行榜
 
         Args:
             page: 页码
+            category: 分类类型 (all/doujin/hanman/...)
 
         Returns:
             排行榜结果列表
         """
-        if not self.is_available():
-            return []
+        return await self._get_ranking("week", page, category)
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return []
-
-            return await self._run_sync(self._get_week_ranking_sync, page, option)
-        except Exception as e:
-            logger.error(f"获取周排行榜失败: {e}")
-            return []
-
-    def _get_week_ranking_sync(self, page: int, option) -> list[dict]:
-        """同步获取周排行榜"""
-        try:
-            client = option.build_jm_client()
-            ranking_page = client.week_ranking(page)
-
-            results = []
-            for album_id, title in ranking_page.iter_id_title():
-                results.append(
-                    {
-                        "id": album_id,
-                        "title": title,
-                        "author": "",
-                        "tags": [],
-                        "category": "",
-                    }
-                )
-            return results
-        except Exception as e:
-            logger.error(f"获取周排行榜失败: {e}")
-            return []
-
-    async def get_month_ranking(self, page: int = 1) -> list[dict]:
+    async def get_month_ranking(
+        self, page: int = 1, category: str = "all"
+    ) -> list[dict]:
         """
         获取月排行榜
 
         Args:
             page: 页码
+            category: 分类类型 (all/doujin/hanman/...)
 
         Returns:
             排行榜结果列表
         """
-        if not self.is_available():
-            return []
+        return await self._get_ranking("month", page, category)
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return []
-
-            return await self._run_sync(self._get_month_ranking_sync, page, option)
-        except Exception as e:
-            logger.error(f"获取月排行榜失败: {e}")
-            return []
-
-    def _get_month_ranking_sync(self, page: int, option) -> list[dict]:
-        """同步获取月排行榜"""
-        try:
-            client = option.build_jm_client()
-            ranking_page = client.month_ranking(page)
-
-            results = []
-            for album_id, title in ranking_page.iter_id_title():
-                results.append(
-                    {
-                        "id": album_id,
-                        "title": title,
-                        "author": "",
-                        "tags": [],
-                        "category": "",
-                    }
-                )
-            return results
-        except Exception as e:
-            logger.error(f"获取月排行榜失败: {e}")
-            return []
-
-    async def get_day_ranking(self, page: int = 1) -> list[dict]:
+    async def get_day_ranking(self, page: int = 1, category: str = "all") -> list[dict]:
         """
         获取日排行榜
 
         Args:
             page: 页码
+            category: 分类类型 (all/doujin/hanman/...)
 
         Returns:
             排行榜结果列表
         """
+        return await self._get_ranking("day", page, category)
+
+    async def _get_ranking(
+        self, ranking_type: str, page: int, category: str
+    ) -> list[dict]:
+        """排行榜统一入口：解析分类并在线程池中调用对应排行方法"""
         if not self.is_available():
             return []
 
@@ -361,16 +306,22 @@ class JMBrowser(JMClientMixin):
             if option is None:
                 return []
 
-            return await self._run_sync(self._get_day_ranking_sync, page, option)
+            cat = CATEGORY_MAP.get(category.lower(), "0")
+            method_name = f"{ranking_type}_ranking"
+            return await self._run_sync(
+                self._get_ranking_sync, method_name, page, cat, option
+            )
         except Exception as e:
-            logger.error(f"获取日排行榜失败: {e}")
+            logger.error(f"获取{ranking_type}排行榜失败: {e}")
             return []
 
-    def _get_day_ranking_sync(self, page: int, option) -> list[dict]:
-        """同步获取日排行榜"""
+    def _get_ranking_sync(
+        self, method_name: str, page: int, category: str, option
+    ) -> list[dict]:
+        """同步获取排行榜（method_name 为 jmcomic 客户端的排行方法名）"""
         try:
             client = option.build_jm_client()
-            ranking_page = client.day_ranking(page)
+            ranking_page = getattr(client, method_name)(page, category)
 
             results = []
             for album_id, title in ranking_page.iter_id_title():
@@ -380,12 +331,12 @@ class JMBrowser(JMClientMixin):
                         "title": title,
                         "author": "",
                         "tags": [],
-                        "category": "",
+                        "category": category,
                     }
                 )
             return results
         except Exception as e:
-            logger.error(f"获取日排行榜失败: {e}")
+            logger.error(f"获取排行榜失败({method_name}): {e}")
             return []
 
     # ==================== 分类浏览功能 ====================

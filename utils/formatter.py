@@ -97,17 +97,22 @@ class MessageFormatter:
 
         return "\n".join(lines)
 
-    @staticmethod
+    @classmethod
     def format_ranking_results(
-        results: list[dict], ranking_type: str, page: int = 1
+        cls,
+        results: list[dict],
+        ranking_type: str,
+        page: int = 1,
+        category: str = "all",
     ) -> str:
         """
         格式化排行榜结果
 
         Args:
             results: 排行榜结果列表
-            ranking_type: 排行榜类型 (week/month)
+            ranking_type: 排行榜类型 (day/week/month)
             page: 当前页码
+            category: 分类类型
 
         Returns:
             格式化后的字符串
@@ -117,8 +122,10 @@ class MessageFormatter:
 
         type_names = {"day": "日", "week": "周", "month": "月"}
         type_name = type_names.get(ranking_type, "周")
+        cat_name = cls.CATEGORY_NAMES.get(category, category)
+        title_cat = "" if category == "all" else f"{cat_name} · "
         lines = [
-            f"🏆 {type_name}排行榜 (第{page}页)",
+            f"🏆 {title_cat}{type_name}排行榜 (第{page}页)",
             "━━━━━━━━━━━━━━━━━━━━━",
         ]
 
@@ -133,13 +140,15 @@ class MessageFormatter:
             rank_emoji = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
             lines.append(f"{rank_emoji} 【{album_id}】{title}")
 
+        cat_arg = "" if category == "all" else f" {category}"
         lines.append("")
         lines.append("━━━━━━━━━━━━━━━━━━━━━")
         lines.append("💡 使用 /jmi <ID> 查看详情")
         lines.append("💡 使用 /jm <ID> 直接下载")
-        lines.append(f"💡 使用 /jmrank {ranking_type} {page + 1} 查看下一页")
+        lines.append(f"💡 使用 /jmrank {ranking_type}{cat_arg} {page + 1} 查看下一页")
         lines.append("")
         lines.append("📊 类型: day(日榜) · week(周榜) · month(月榜)")
+        lines.append("📂 可加分类: hanman·doujin·single·short·meiman·3d·cosplay")
 
         return "\n".join(lines)
 

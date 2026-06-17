@@ -538,13 +538,17 @@ class JMCosmosPlugin(Star):
 
     @filter.command("jmrank")
     async def ranking_command(
-        self, event: AstrMessageEvent, ranking_type: str = "week", page: int = 1
+        self,
+        event: AstrMessageEvent,
+        arg1: str = None,
+        arg2: str = None,
+        arg3: str = None,
     ):
         """
         查看排行榜
 
-        用法: /jmrank [day/week/month] [页码]
-        示例: /jmrank week 1
+        用法: /jmrank [day/week/month] [分类] [页码]
+        示例: /jmrank week hanman 1
         """
         # 权限检查
         has_perm, error_msg = self._check_permission(event)
@@ -552,40 +556,55 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(error_msg)
             return
 
-        # 验证排行榜类型
-        ranking_type = str(ranking_type).lower().strip()
-        if ranking_type not in ("day", "week", "month"):
-            yield event.plain_result(
-                "❌ 无效的排行榜类型\n用法: /jmrank [day/week/month] [页码]\n示例: /jmrank week 1"
-            )
-            return
+        from .core.browser import JMBrowser
 
-        # 验证页码
-        try:
-            page = int(page)
-            if page < 1:
-                page = 1
-        except (ValueError, TypeError):
-            page = 1
+        categories = JMBrowser.get_category_list()
+
+        # 智能解析参数：榜单类型 / 分类 / 页码，顺序任意
+        ranking_type = "week"
+        category = "all"
+        page = 1
+
+        for arg in (arg1, arg2, arg3):
+            if arg is None:
+                continue
+            arg_lower = str(arg).lower().strip()
+            if arg_lower in ("day", "week", "month"):
+                ranking_type = arg_lower
+            elif arg_lower.isdigit():
+                page = max(1, int(arg_lower))
+            elif arg_lower in categories:
+                category = arg_lower
+            else:
+                yield event.plain_result(
+                    f"❌ 无效参数: {arg}\n"
+                    "用法: /jmrank [day/week/month] [分类] [页码]\n"
+                    "示例: /jmrank week hanman 1"
+                )
+                return
 
         try:
             type_names = {"day": "日", "week": "周", "month": "月"}
             type_name = type_names.get(ranking_type, "周")
-            yield event.plain_result(f"🏆 正在获取{type_name}排行榜第{page}页...")
+            cat_name = MessageFormatter.CATEGORY_NAMES.get(category, category)
+            cat_prefix = "" if category == "all" else f"{cat_name}·"
+            yield event.plain_result(
+                f"🏆 正在获取{cat_prefix}{type_name}排行榜第{page}页..."
+            )
 
             if ranking_type == "day":
-                results = await self.browser.get_day_ranking(page)
+                results = await self.browser.get_day_ranking(page, category)
             elif ranking_type == "week":
-                results = await self.browser.get_week_ranking(page)
+                results = await self.browser.get_week_ranking(page, category)
             else:
-                results = await self.browser.get_month_ranking(page)
+                results = await self.browser.get_month_ranking(page, category)
 
             # 限制结果数量
             page_size = self.config_manager.search_page_size
             results = results[:page_size]
 
             result_msg = MessageFormatter.format_ranking_results(
-                results, ranking_type, page
+                results, ranking_type, page, category
             )
             yield event.plain_result(result_msg)
 

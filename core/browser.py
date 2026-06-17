@@ -36,13 +36,16 @@ class JMBrowser(JMClientMixin):
 
     # ==================== 搜索功能 ====================
 
-    async def search_albums(self, keyword: str, page: int = 1) -> list[dict]:
+    async def search_albums(
+        self, keyword: str, page: int = 1, mode: str = "site"
+    ) -> list[dict]:
         """
         搜索本子
 
         Args:
             keyword: 搜索关键词
             page: 页码
+            mode: 搜索模式 (site/tag/author/actor/work)
 
         Returns:
             搜索结果列表
@@ -55,16 +58,27 @@ class JMBrowser(JMClientMixin):
             if option is None:
                 return []
 
-            return await self._run_sync(self._search_albums_sync, keyword, page, option)
+            return await self._run_sync(
+                self._search_albums_sync, keyword, page, mode, option
+            )
         except Exception as e:
             logger.error(f"搜索失败: {e}")
             return []
 
-    def _search_albums_sync(self, keyword: str, page: int, option) -> list[dict]:
+    def _search_albums_sync(
+        self, keyword: str, page: int, mode: str, option
+    ) -> list[dict]:
         """同步搜索本子"""
         try:
             client = option.build_jm_client()
-            search_page = client.search_site(keyword, page)
+            search_method = {
+                "site": client.search_site,
+                "tag": client.search_tag,
+                "author": client.search_author,
+                "actor": client.search_actor,
+                "work": client.search_work,
+            }.get(mode, client.search_site)
+            search_page = search_method(keyword, page)
 
             results = []
             for album_id, title, tags in search_page.iter_id_title_tag():

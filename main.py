@@ -424,8 +424,9 @@ class JMCosmosPlugin(Star):
         搜索漫画
 
         用法: /jms <关键词> [页码]
+        支持搜索类型前缀: tag: / author: / actor: / work:
         示例: /jms 标签名
-        示例: /jms 标签名 2
+        示例: /jms tag:全彩 2
         """
         # 权限检查
         has_perm, error_msg = self._check_permission(event)
@@ -435,12 +436,27 @@ class JMCosmosPlugin(Star):
 
         if keyword is None:
             yield event.plain_result(
-                "❌ 请提供搜索关键词\n用法: /jms <关键词> [页码]\n示例: /jms 标签名\n示例: /jms 标签名 2"
+                "❌ 请提供搜索关键词\n用法: /jms <关键词> [页码]\n"
+                "搜索类型: tag:标签 author:作者 actor:角色 work:作品\n"
+                "示例: /jms 标签名\n示例: /jms tag:全彩 2"
             )
             return
 
-        keyword = str(keyword).strip()
-        if not keyword:
+        raw_query = str(keyword).strip()
+        if not raw_query:
+            yield event.plain_result("❌ 搜索关键词不能为空")
+            return
+
+        # 解析搜索类型前缀（tag:/author:/actor:/work:），默认综合搜索
+        mode = "site"
+        search_term = raw_query
+        for m in ("tag", "author", "actor", "work"):
+            if raw_query.lower().startswith(f"{m}:"):
+                mode = m
+                search_term = raw_query[len(m) + 1 :].strip()
+                break
+
+        if not search_term:
             yield event.plain_result("❌ 搜索关键词不能为空")
             return
 
@@ -453,15 +469,23 @@ class JMCosmosPlugin(Star):
             page = 1
 
         try:
-            yield event.plain_result(f"🔍 正在搜索: {keyword} (第{page}页)...")
+            from .core.constants import SEARCH_MODE_NAMES
 
-            results = await self.browser.search_albums(keyword, page)
+            mode_name = SEARCH_MODE_NAMES.get(mode, "综合")
+            yield event.plain_result(
+                f"🔍 正在搜索[{mode_name}]: {search_term} (第{page}页)..."
+            )
+
+            results = await self.browser.search_albums(search_term, page, mode)
 
             # 限制结果数量
             page_size = self.config_manager.search_page_size
             results = results[:page_size]
 
-            result_msg = MessageFormatter.format_search_results(results, keyword, page)
+            # 使用原始查询串（含前缀）以便翻页提示可复用
+            result_msg = MessageFormatter.format_search_results(
+                results, raw_query, page
+            )
             yield event.plain_result(result_msg)
 
         except Exception as e:

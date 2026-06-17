@@ -94,6 +94,7 @@ class MessageFormatter:
         lines.append("💡 使用 /jmi <ID> 查看详情")
         lines.append("💡 使用 /jm <ID> 直接下载")
         lines.append(f"💡 使用 /jms {keyword} {page + 1} 查看下一页")
+        lines.append("💡 可加前缀指定类型: tag: / author: / actor:")
 
         return "\n".join(lines)
 
@@ -371,9 +372,9 @@ day(今日) week(本周) month(本月) all(全部)
 【基本命令】
 /jm <ID>     - 下载指定ID的本子
 /jmc <ID> <章节> - 下载指定本子的指定章节
-/jms <关键词> [页码] - 搜索漫画
+/jms <关键词> [页码] - 搜索漫画（支持 tag:/author:/actor: 前缀）
 /jmi <ID>    - 查看本子详情
-/jmrank      - 查看排行榜
+/jmrank      - 查看排行榜（可加分类，如 week hanman）
 /jmrec       - 推荐浏览（分类/排序/时间）
 /jmhelp      - 显示此帮助信息
 

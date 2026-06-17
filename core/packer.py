@@ -21,6 +21,19 @@ try:
 except ImportError:
     PYMUPDF_AVAILABLE = False
 
+try:
+    from PIL import Image
+
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+
+# 长图打包参数
+_LONG_IMG_WIDTH = 1200  # 统一宽度，所有图片缩放到此宽度后纵向拼接
+_LONG_IMG_MAX_STRIP_HEIGHT = 12000  # 单段长图最大高度，超出则分段
+_LONG_IMG_MAX_PER_STRIP = 30  # 单段长图最多包含的图片数
+_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
 
 @dataclass
 class PackResult:
@@ -79,6 +92,8 @@ class JMPacker:
             return self._pack_zip(source_dir, output_name, output_dir)
         elif self.pack_format == "pdf":
             return self._pack_pdf(source_dir, output_name, output_dir)
+        elif self.pack_format == "long_img":
+            return self._pack_long_img(source_dir, output_name, output_dir)
         elif self.pack_format == "none":
             return PackResult(
                 success=True, output_path=source_dir, format="none", encrypted=False
@@ -232,6 +247,144 @@ class JMPacker:
                 encrypted=False,
                 error_message=str(e),
             )
+
+    def _pack_long_img(
+        self, source_dir: Path, output_name: str, output_dir: Path
+    ) -> PackResult:
+        """打包为长图：纵向拼接图片，过长自动分段，多段则打包为 ZIP"""
+        if not PIL_AVAILABLE:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format="long_img",
+                encrypted=False,
+                error_message="Pillow 库未安装，无法生成长图",
+            )
+
+        # 收集所有图片文件（按完整路径排序，保证章节/页码顺序）
+        image_files: list[Path] = []
+        for root, _dirs, files in os.walk(source_dir):
+            for file in files:
+                file_path = Path(root) / file
+                if file_path.suffix.lower() in _IMAGE_EXTENSIONS:
+                    image_files.append(file_path)
+        image_files.sort()
+
+        if not image_files:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format="long_img",
+                encrypted=False,
+                error_message="未找到图片文件",
+            )
+
+        try:
+            strips = self._build_long_strips(image_files)
+        except Exception as e:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format="long_img",
+                encrypted=False,
+                error_message=str(e),
+            )
+
+        if not strips:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format="long_img",
+                encrypted=False,
+                error_message="无法生成长图",
+            )
+
+        try:
+            # 单段：直接输出一张长图
+            if len(strips) == 1:
+                output_path = output_dir / f"{output_name}.png"
+                strips[0].save(output_path)
+                strips[0].close()
+                return PackResult(
+                    success=True,
+                    output_path=output_path,
+                    format="long_img",
+                    encrypted=False,
+                )
+
+            # 多段：先落地为多张 png，再复用 ZIP 打包逻辑（支持加密）
+            import tempfile
+
+            tmp_dir = Path(tempfile.mkdtemp(prefix="jm_longimg_"))
+            try:
+                for index, strip in enumerate(strips, 1):
+                    strip.save(tmp_dir / f"{output_name}_{index:03d}.png")
+                    strip.close()
+                zip_result = self._pack_zip(tmp_dir, output_name, output_dir)
+                return PackResult(
+                    success=zip_result.success,
+                    output_path=zip_result.output_path,
+                    format="long_img",
+                    encrypted=zip_result.encrypted,
+                    error_message=zip_result.error_message,
+                )
+            finally:
+                self.cleanup(tmp_dir)
+        except Exception as e:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format="long_img",
+                encrypted=False,
+                error_message=str(e),
+            )
+
+    def _build_long_strips(self, image_files: list[Path]) -> list:
+        """把图片缩放到统一宽度并按高度/数量上限分段，返回拼接后的 PIL 图片列表"""
+        strips = []
+        batch: list = []
+        batch_height = 0
+
+        def flush_batch() -> None:
+            nonlocal batch, batch_height
+            if batch:
+                strips.append(self._merge_vertical(batch))
+                batch = []
+                batch_height = 0
+
+        for file_path in image_files:
+            try:
+                with Image.open(file_path) as raw:
+                    scaled_height = max(
+                        1, int(raw.height * _LONG_IMG_WIDTH / raw.width)
+                    )
+                    img = raw.convert("RGB").resize((_LONG_IMG_WIDTH, scaled_height))
+            except Exception:
+                continue  # 跳过无法读取的图片
+
+            if batch and (
+                batch_height + img.height > _LONG_IMG_MAX_STRIP_HEIGHT
+                or len(batch) >= _LONG_IMG_MAX_PER_STRIP
+            ):
+                flush_batch()
+
+            batch.append(img)
+            batch_height += img.height
+
+        flush_batch()
+        return strips
+
+    @staticmethod
+    def _merge_vertical(images: list):
+        """把同宽度的图片纵向拼成一张，并释放分块图片占用的内存"""
+        total_height = sum(im.height for im in images)
+        canvas = Image.new("RGB", (_LONG_IMG_WIDTH, total_height), (255, 255, 255))
+        offset_y = 0
+        for im in images:
+            canvas.paste(im, (0, offset_y))
+            offset_y += im.height
+            im.close()
+        return canvas
 
     @staticmethod
     def cleanup(path: Path) -> bool:

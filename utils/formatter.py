@@ -332,6 +332,7 @@ day(今日) week(本周) month(本月) all(全部)
                 format_name = {
                     "zip": "ZIP压缩包",
                     "pdf": "PDF文档",
+                    "long_img": "长图",
                     "none": "原始文件夹",
                 }.get(pack_result.format, pack_result.format)
 

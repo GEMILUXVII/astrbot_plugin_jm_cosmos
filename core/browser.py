@@ -158,44 +158,36 @@ class JMBrowser(JMClientMixin):
         if not self.is_available():
             return None
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return None
-
-            return await self._run_sync(
-                self._get_photo_id_by_index_sync, album_id, chapter_index, option
-            )
-        except Exception as e:
-            logger.error(f"获取章节ID失败: {e}")
+        option = self._get_option()
+        if option is None:
             return None
+
+        return await self._run_sync(
+            self._get_photo_id_by_index_sync, album_id, chapter_index, option
+        )
 
     def _get_photo_id_by_index_sync(
         self, album_id: str, chapter_index: int, option
     ) -> tuple[str, str, int] | None:
-        """同步获取章节ID"""
-        try:
-            jmcomic = import_jmcomic()
-            if jmcomic is None:
-                return None
-
-            client = option.new_jm_client()
-            parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
-            album = client.get_album_detail(parsed_id)
-
-            total_chapters = len(album.episode_list)
-
-            # 验证章节序号有效性（用户输入从1开始，内部索引从0开始）
-            if chapter_index < 1 or chapter_index > total_chapters:
-                return None
-
-            # 获取章节信息: (photo_id, photo_index, photo_title)
-            photo_id, _, photo_title = album.episode_list[chapter_index - 1]
-
-            return (photo_id, photo_title, total_chapters)
-        except Exception as e:
-            logger.error(f"获取章节ID失败: {e}")
+        """同步获取章节ID（仅章节越界返回 None，其余异常向上传播以便归类）"""
+        jmcomic = import_jmcomic()
+        if jmcomic is None:
             return None
+
+        client = option.new_jm_client()
+        parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
+        album = client.get_album_detail(parsed_id)
+
+        total_chapters = len(album.episode_list)
+
+        # 仅章节序号越界视为“章节不存在”，返回 None（用户输入从1开始）
+        if chapter_index < 1 or chapter_index > total_chapters:
+            return None
+
+        # 获取章节信息: (photo_id, photo_index, photo_title)
+        photo_id, _, photo_title = album.episode_list[chapter_index - 1]
+
+        return (photo_id, photo_title, total_chapters)
 
     async def get_album_cover(self, album_id: str, save_dir: Path) -> Path | None:
         """
@@ -301,47 +293,39 @@ class JMBrowser(JMClientMixin):
     async def _get_ranking(
         self, ranking_type: str, page: int, category: str
     ) -> list[dict]:
-        """排行榜统一入口：解析分类并在线程池中调用对应排行方法"""
+        """排行榜统一入口：解析分类并在线程池中调用对应排行方法（异常向上传播）"""
         if not self.is_available():
             return []
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return []
-
-            cat = CATEGORY_MAP.get(category.lower(), "0")
-            method_name = f"{ranking_type}_ranking"
-            return await self._run_sync(
-                self._get_ranking_sync, method_name, page, cat, option
-            )
-        except Exception as e:
-            logger.error(f"获取{ranking_type}排行榜失败: {e}")
+        option = self._get_option()
+        if option is None:
             return []
+
+        cat = CATEGORY_MAP.get(category.lower(), "0")
+        method_name = f"{ranking_type}_ranking"
+        return await self._run_sync(
+            self._get_ranking_sync, method_name, page, cat, option
+        )
 
     def _get_ranking_sync(
         self, method_name: str, page: int, category: str, option
     ) -> list[dict]:
-        """同步获取排行榜（method_name 为 jmcomic 客户端的排行方法名）"""
-        try:
-            client = option.new_jm_client()
-            ranking_page = getattr(client, method_name)(page, category)
+        """同步获取排行榜（method_name 为 jmcomic 客户端的排行方法名，异常向上传播）"""
+        client = option.new_jm_client()
+        ranking_page = getattr(client, method_name)(page, category)
 
-            results = []
-            for album_id, title in ranking_page.iter_id_title():
-                results.append(
-                    {
-                        "id": album_id,
-                        "title": title,
-                        "author": "",
-                        "tags": [],
-                        "category": category,
-                    }
-                )
-            return results
-        except Exception as e:
-            logger.error(f"获取排行榜失败({method_name}): {e}")
-            return []
+        results = []
+        for album_id, title in ranking_page.iter_id_title():
+            results.append(
+                {
+                    "id": album_id,
+                    "title": title,
+                    "author": "",
+                    "tags": [],
+                    "category": category,
+                }
+            )
+        return results
 
     # ==================== 分类浏览功能 ====================
 
@@ -369,51 +353,43 @@ class JMBrowser(JMClientMixin):
         if not self.is_available():
             return []
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return []
-
-            # 转换参数
-            cat = CATEGORY_MAP.get(category.lower(), "0")
-            order = ORDER_MAP.get(order_by.lower(), "mv")
-            time = TIME_MAP.get(time_range.lower(), "w")
-
-            return await self._run_sync(
-                self._get_category_albums_sync, page, time, cat, order, option
-            )
-        except Exception as e:
-            logger.error(f"获取分类浏览失败: {e}")
+        option = self._get_option()
+        if option is None:
             return []
+
+        # 转换参数
+        cat = CATEGORY_MAP.get(category.lower(), "0")
+        order = ORDER_MAP.get(order_by.lower(), "mv")
+        time = TIME_MAP.get(time_range.lower(), "w")
+
+        return await self._run_sync(
+            self._get_category_albums_sync, page, time, cat, order, option
+        )
 
     def _get_category_albums_sync(
         self, page: int, time: str, category: str, order_by: str, option
     ) -> list[dict]:
-        """同步获取分类浏览结果"""
-        try:
-            client = option.new_jm_client()
-            category_page = client.categories_filter(
-                page=page,
-                time=time,
-                category=category,
-                order_by=order_by,
-            )
+        """同步获取分类浏览结果（异常向上传播）"""
+        client = option.new_jm_client()
+        category_page = client.categories_filter(
+            page=page,
+            time=time,
+            category=category,
+            order_by=order_by,
+        )
 
-            results = []
-            for album_id, title in category_page.iter_id_title():
-                results.append(
-                    {
-                        "id": album_id,
-                        "title": title,
-                        "author": "",
-                        "tags": [],
-                        "category": category,
-                    }
-                )
-            return results
-        except Exception as e:
-            logger.error(f"获取分类浏览失败: {e}")
-            return []
+        results = []
+        for album_id, title in category_page.iter_id_title():
+            results.append(
+                {
+                    "id": album_id,
+                    "title": title,
+                    "author": "",
+                    "tags": [],
+                    "category": category,
+                }
+            )
+        return results
 
     # 辅助方法：使用 constants 模块中的函数
     get_category_list = staticmethod(get_category_list)
@@ -439,45 +415,35 @@ class JMBrowser(JMClientMixin):
         if not self.is_available():
             return [], []
 
-        try:
-            return await self._run_sync(
-                self._get_favorites_sync, client, page, folder_id
-            )
-        except Exception as e:
-            logger.error(f"获取收藏夹失败: {e}")
-            return [], []
+        return await self._run_sync(self._get_favorites_sync, client, page, folder_id)
 
     def _get_favorites_sync(
         self, client, page: int, folder_id: str
     ) -> tuple[list[dict], list[dict]]:
-        """同步获取收藏夹内容"""
-        try:
-            fav_page = client.favorite_folder(page=page, folder_id=folder_id)
+        """同步获取收藏夹内容（异常向上传播）"""
+        fav_page = client.favorite_folder(page=page, folder_id=folder_id)
 
-            # 获取收藏的本子
-            albums = []
-            for album_id, title in fav_page.iter_id_title():
-                albums.append(
-                    {
-                        "id": album_id,
-                        "title": title,
-                    }
-                )
+        # 获取收藏的本子
+        albums = []
+        for album_id, title in fav_page.iter_id_title():
+            albums.append(
+                {
+                    "id": album_id,
+                    "title": title,
+                }
+            )
 
-            # 获取收藏夹列表
-            folders = []
-            for folder_id, folder_name in fav_page.iter_folder_id_name():
-                folders.append(
-                    {
-                        "id": folder_id,
-                        "name": folder_name,
-                    }
-                )
+        # 获取收藏夹列表
+        folders = []
+        for folder_id, folder_name in fav_page.iter_folder_id_name():
+            folders.append(
+                {
+                    "id": folder_id,
+                    "name": folder_name,
+                }
+            )
 
-            return albums, folders
-        except Exception as e:
-            logger.error(f"获取收藏夹失败: {e}")
-            return [], []
+        return albums, folders
 
     async def add_favorite(
         self, client, album_id: str, folder_id: str = "0"

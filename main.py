@@ -391,9 +391,7 @@ class JMCosmosPlugin(Star):
 
             if chapter_info is None:
                 yield event.plain_result(
-                    f"❌ 无法获取章节信息\n可能的原因:\n"
-                    f"• 本子 {album_id} 不存在\n"
-                    f"• 第 {chapter_idx} 章节不存在"
+                    f"❌ 第 {chapter_idx} 章节不存在，请检查章节序号"
                 )
                 return
 
@@ -707,7 +705,8 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"获取排行榜失败: {e}")
-            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     @filter.command("jmrec")
     async def recommend_command(
@@ -846,7 +845,8 @@ class JMCosmosPlugin(Star):
                 import traceback
 
                 logger.error(traceback.format_exc())
-            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     @filter.command("jmlogin")
     async def login_command(
@@ -1002,7 +1002,8 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"获取收藏夹失败: {e}")
-            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     # ==================== 订阅功能 ====================
 

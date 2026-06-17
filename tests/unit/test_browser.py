@@ -253,3 +253,71 @@ class TestBrowserErrorPropagation:
 
         with pytest.raises(RuntimeError, match="boom"):
             await browser.search_albums("keyword")
+
+    @pytest.mark.asyncio
+    async def test_get_photo_id_propagates_errors(self, config_manager, monkeypatch):
+        from core.browser import JMBrowser
+
+        browser = JMBrowser(config_manager)
+        client = MagicMock()
+        client.get_album_detail.side_effect = RuntimeError("net")
+
+        fake_option = MagicMock()
+        fake_option.new_jm_client.return_value = client
+
+        monkeypatch.setattr(browser, "_get_option", lambda: fake_option)
+        monkeypatch.setattr(JMBrowser, "is_available", staticmethod(lambda: True))
+
+        with pytest.raises(RuntimeError, match="net"):
+            await browser.get_photo_id_by_index("123456", 1)
+
+    @pytest.mark.asyncio
+    async def test_get_photo_id_out_of_range_returns_none(
+        self, config_manager, monkeypatch
+    ):
+        from core.browser import JMBrowser
+
+        browser = JMBrowser(config_manager)
+        album = MagicMock()
+        album.episode_list = [("p1", 1, "第1话"), ("p2", 2, "第2话")]
+        client = MagicMock()
+        client.get_album_detail.return_value = album
+
+        fake_option = MagicMock()
+        fake_option.new_jm_client.return_value = client
+
+        monkeypatch.setattr(browser, "_get_option", lambda: fake_option)
+        monkeypatch.setattr(JMBrowser, "is_available", staticmethod(lambda: True))
+
+        # 章节越界：返回 None（而非抛异常），表示“章节不存在”
+        assert await browser.get_photo_id_by_index("123456", 99) is None
+
+    @pytest.mark.asyncio
+    async def test_ranking_propagates_errors(self, config_manager, monkeypatch):
+        from core.browser import JMBrowser
+
+        browser = JMBrowser(config_manager)
+        client = MagicMock()
+        client.week_ranking.side_effect = RuntimeError("rank boom")
+
+        fake_option = MagicMock()
+        fake_option.new_jm_client.return_value = client
+
+        monkeypatch.setattr(browser, "_get_option", lambda: fake_option)
+        monkeypatch.setattr(JMBrowser, "is_available", staticmethod(lambda: True))
+
+        with pytest.raises(RuntimeError, match="rank boom"):
+            await browser.get_week_ranking(1)
+
+    @pytest.mark.asyncio
+    async def test_get_favorites_propagates_errors(self, config_manager, monkeypatch):
+        from core.browser import JMBrowser
+
+        browser = JMBrowser(config_manager)
+        client = MagicMock()
+        client.favorite_folder.side_effect = RuntimeError("fav boom")
+
+        monkeypatch.setattr(JMBrowser, "is_available", staticmethod(lambda: True))
+
+        with pytest.raises(RuntimeError, match="fav boom"):
+            await browser.get_favorites(client, page=1)

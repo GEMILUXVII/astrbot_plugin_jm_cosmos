@@ -6,7 +6,7 @@
 """
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -22,7 +22,6 @@ class TestJMAuthManagerInit:
         assert manager.config is config_manager
         assert manager._logged_in is False
         assert manager._username is None
-        assert manager._client is None
 
     def test_init_restores_session_from_cookies(
         self, config_manager_with_admin, data_dir
@@ -174,14 +173,12 @@ class TestJMAuthManagerLogout:
         manager = JMAuthManager(config_manager)
         manager._logged_in = True
         manager._username = "testuser"
-        manager._client = MagicMock()
 
         success, message = manager.logout()
 
         assert success is True
         assert manager._logged_in is False
         assert manager._username is None
-        assert manager._client is None
         assert "已登出" in message
 
 

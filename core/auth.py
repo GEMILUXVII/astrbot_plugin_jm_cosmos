@@ -24,7 +24,6 @@ class JMAuthManager(JMClientMixin):
         self.config = config_manager
         self._logged_in = False
         self._username: str | None = None
-        self._client = None
 
         # 尝试从 cookies 文件恢复登录状态
         self._try_restore_session()
@@ -53,7 +52,6 @@ class JMAuthManager(JMClientMixin):
                     option.update_cookies(cookies)
                     self._username = username
                     self._logged_in = True
-                    self._client = None  # 下次按需用带 cookies 的 option 重建
                     logger.info(f"已从本地恢复登录会话: {username}")
                     return
             except Exception as e:
@@ -104,9 +102,11 @@ class JMAuthManager(JMClientMixin):
         return self._username if self._logged_in else None
 
     def get_client(self):
-        """获取已认证的客户端（如果已登录）"""
-        if self._logged_in and self._client is not None:
-            return self._client
+        """获取客户端：每次新建，避免并发操作共享同一已认证 client。
+
+        登录后的会话已通过 option.update_cookies 注入 option，因此新建的
+        client 仍会带上登录态。
+        """
         return self._build_client()
 
     async def login(self, username: str, password: str) -> tuple[bool, str]:
@@ -143,7 +143,6 @@ class JMAuthManager(JMClientMixin):
             # 保存登录状态
             self._logged_in = True
             self._username = username
-            self._client = client
 
             # 提取真实 cookies 并持久化，让重启后无需重新登录
             cookies = None
@@ -218,7 +217,6 @@ class JMAuthManager(JMClientMixin):
         username = self._username
         self._logged_in = False
         self._username = None
-        self._client = None
 
         # 清除保存的会话
         self._clear_session()

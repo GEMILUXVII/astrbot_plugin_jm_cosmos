@@ -133,6 +133,33 @@ class JMCosmosPlugin(Star):
 
         return _on_progress
 
+    def _reserve_quota(self, event: AstrMessageEvent) -> tuple[bool, str, bool]:
+        """
+        下载前原子预留配额（管理员与不限额时跳过）。
+
+        Returns:
+            (是否放行, 拒绝消息, 是否已预留配额)
+        """
+        user_id = event.get_sender_id()
+        limit = self.config_manager.daily_download_limit
+        is_admin = str(user_id) in self.config_manager.admin_list
+        if limit <= 0 or is_admin:
+            return True, "", False
+
+        reserved, used, total = self.quota_manager.reserve(user_id, limit)
+        if not reserved:
+            return (
+                False,
+                f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试",
+                False,
+            )
+        return True, "", True
+
+    def _refund_quota(self, event: AstrMessageEvent, reserved: bool) -> None:
+        """下载失败时返还已预留的配额"""
+        if reserved:
+            self.quota_manager.refund(event.get_sender_id())
+
     @filter.command("jmhelp")
     async def help_command(self, event: AstrMessageEvent):
         """显示帮助信息"""
@@ -167,18 +194,13 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return
 
-        # 检查下载配额（管理员豁免）
-        user_id = event.get_sender_id()
-        limit = self.config_manager.daily_download_limit
-        is_admin = str(user_id) in self.config_manager.admin_list
-        if limit > 0 and not is_admin:
-            can_download, used, total = self.quota_manager.check_quota(user_id, limit)
-            if not can_download:
-                yield event.plain_result(
-                    f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试"
-                )
-                return
+        # 下载前原子预留配额（管理员/不限额时跳过）
+        ok, deny_msg, quota_reserved = self._reserve_quota(event)
+        if not ok:
+            yield event.plain_result(deny_msg)
+            return
 
+        download_succeeded = False
         try:
             # 发送开始下载提示
             yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
@@ -229,6 +251,9 @@ class JMCosmosPlugin(Star):
                 )
                 return
 
+            # 下载成功，配额已在预留阶段计入（管理员不计）
+            download_succeeded = True
+
             # 生成文件名
             output_name = generate_album_filename(
                 album_id=album_id,
@@ -246,11 +271,6 @@ class JMCosmosPlugin(Star):
                 source_dir=result.save_path,
                 output_name=output_name,
             )
-
-            # 发送结果消息
-            # 下载成功，消耗配额
-            if limit > 0:
-                self.quota_manager.consume_quota(user_id)
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
 
@@ -301,6 +321,9 @@ class JMCosmosPlugin(Star):
                 logger.error(traceback.format_exc())
             etype, emsg = classify_exception(e)
             yield event.plain_result(MessageFormatter.format_error(etype, emsg))
+        finally:
+            if not download_succeeded:
+                self._refund_quota(event, quota_reserved)
 
     @filter.command("jmc")
     async def download_photo_command(
@@ -340,18 +363,13 @@ class JMCosmosPlugin(Star):
             yield event.plain_result("❌ 章节序号必须是数字")
             return
 
-        # 检查下载配额（管理员豁免）
-        user_id = event.get_sender_id()
-        limit = self.config_manager.daily_download_limit
-        is_admin = str(user_id) in self.config_manager.admin_list
-        if limit > 0 and not is_admin:
-            can_download, used, total = self.quota_manager.check_quota(user_id, limit)
-            if not can_download:
-                yield event.plain_result(
-                    f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试"
-                )
-                return
+        # 下载前原子预留配额（管理员/不限额时跳过）
+        ok, deny_msg, quota_reserved = self._reserve_quota(event)
+        if not ok:
+            yield event.plain_result(deny_msg)
+            return
 
+        download_succeeded = False
         try:
             yield event.plain_result(
                 f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
@@ -391,6 +409,9 @@ class JMCosmosPlugin(Star):
                 )
                 return
 
+            # 下载成功，配额已在预留阶段计入（管理员不计）
+            download_succeeded = True
+
             # 生成文件名（带章节号）
             output_name = generate_album_filename(
                 album_id=album_id,
@@ -409,10 +430,6 @@ class JMCosmosPlugin(Star):
                 source_dir=result.save_path,
                 output_name=output_name,
             )
-
-            # 下载成功，消耗配额
-            if limit > 0:
-                self.quota_manager.consume_quota(user_id)
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
 
@@ -457,6 +474,9 @@ class JMCosmosPlugin(Star):
             logger.error(f"下载章节失败: {e}")
             etype, emsg = classify_exception(e)
             yield event.plain_result(MessageFormatter.format_error(etype, emsg))
+        finally:
+            if not download_succeeded:
+                self._refund_quota(event, quota_reserved)
 
     @filter.command("jms")
     async def search_command(
@@ -1081,21 +1101,16 @@ class JMCosmosPlugin(Star):
             yield event.plain_result(MessageFormatter.format_error("invalid_id"))
             return
 
-        # 下载配额（管理员豁免）
-        user_id = event.get_sender_id()
-        limit = self.config_manager.daily_download_limit
-        is_admin = str(user_id) in self.config_manager.admin_list
-        if limit > 0 and not is_admin:
-            can_download, used, total = self.quota_manager.check_quota(user_id, limit)
-            if not can_download:
-                yield event.plain_result(
-                    f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试"
-                )
-                return
+        # 下载前原子预留配额（管理员/不限额时跳过）
+        ok, deny_msg, quota_reserved = self._reserve_quota(event)
+        if not ok:
+            yield event.plain_result(deny_msg)
+            return
 
         umo = event.unified_msg_origin
         skip = self.subscription_manager.get_last_count(umo, album_id) or 0
 
+        download_succeeded = False
         try:
             yield event.plain_result(f"⏳ 正在检查本子 {album_id} 的更新...")
 
@@ -1127,6 +1142,9 @@ class JMCosmosPlugin(Star):
                 )
                 return
 
+            # 下载成功，配额已在预留阶段计入（管理员不计）
+            download_succeeded = True
+
             output_name = generate_album_filename(
                 album_id=album_id,
                 password=self.config_manager.pack_password,
@@ -1140,9 +1158,6 @@ class JMCosmosPlugin(Star):
                 source_dir=result.save_path, output_name=output_name
             )
 
-            if limit > 0:
-                self.quota_manager.consume_quota(user_id)
-
             # 同步更新订阅记录的已知章节数
             if self.subscription_manager.exists(umo, album_id):
                 self.subscription_manager.update_count(umo, album_id, current)
@@ -1154,6 +1169,9 @@ class JMCosmosPlugin(Star):
             logger.error(f"增量下载失败: {e}")
             etype, emsg = classify_exception(e)
             yield event.plain_result(MessageFormatter.format_error(etype, emsg))
+        finally:
+            if not download_succeeded:
+                self._refund_quota(event, quota_reserved)
 
     async def _emit_packed_file(self, event: AstrMessageEvent, result, pack_result):
         """统一处理打包文件的发送（含自动撤回与清理），供下载类命令复用"""

@@ -117,6 +117,70 @@ class DownloadQuotaManager:
             logger.error(f"消耗配额失败: {e}")
             return 0
 
+    def reserve(self, user_id: str, limit: int) -> tuple[bool, int, int]:
+        """
+        原子地预留一次配额：在单个事务内检查并自增，避免并发 TOCTOU。
+
+        Args:
+            user_id: 用户 QQ 号
+            limit: 每日下载限制次数
+
+        Returns:
+            (是否预留成功, 预留后已用次数, 限制次数)
+        """
+        if limit <= 0:
+            return True, 0, 0  # 不限制
+
+        today = self._get_today()
+        conn = self._get_connection()
+        try:
+            conn.isolation_level = None  # 手动管理事务
+            conn.execute("BEGIN IMMEDIATE")  # 立即获取写锁，串行化并发预留
+            row = conn.execute(
+                "SELECT count FROM download_quota WHERE user_id = ? AND date = ?",
+                (str(user_id), today),
+            ).fetchone()
+            used = row[0] if row else 0
+            if used >= limit:
+                conn.execute("ROLLBACK")
+                return False, used, limit
+            conn.execute(
+                """
+                INSERT INTO download_quota (user_id, date, count)
+                VALUES (?, ?, 1)
+                ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1
+                """,
+                (str(user_id), today),
+            )
+            conn.execute("COMMIT")
+            return True, used + 1, limit
+        except Exception as e:
+            logger.error(f"预留配额失败: {e}")
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:
+                pass
+            # 数据库异常时放行，避免因配额组件故障阻断下载
+            return True, 0, limit
+        finally:
+            conn.close()
+
+    def refund(self, user_id: str) -> None:
+        """返还一次配额（下载失败时回滚预留），不会低于 0"""
+        today = self._get_today()
+        try:
+            with self._get_connection() as conn:
+                conn.execute(
+                    """
+                    UPDATE download_quota SET count = MAX(0, count - 1)
+                    WHERE user_id = ? AND date = ?
+                    """,
+                    (str(user_id), today),
+                )
+                conn.commit()
+        except Exception as e:
+            logger.error(f"返还配额失败: {e}")
+
     def get_remaining(self, user_id: str, limit: int) -> int | None:
         """
         获取剩余次数

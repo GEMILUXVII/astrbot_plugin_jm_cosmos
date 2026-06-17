@@ -307,7 +307,7 @@ pip install -r requirements.txt
 | `proxy_url`              | 代理服务器地址             | 空             | 格式: `http://host:port` |
 | `max_concurrent_photos`  | 最大并发章节数             | `3`            | 建议 3-5 |
 | `max_concurrent_images`  | 最大并发图片数             | `5`            | 建议 5-10 |
-| `pack_format`            | 打包格式 (zip/pdf/long_img/none) | `zip`    | long_img 为纵向长图，过长自动分段打包为 zip |
+| `pack_format`            | 打包格式 (zip/pdf/long_img/none) | `zip`    | long_img 为纵向长图(过长分段打包 zip)；none 为不打包、仅本地保存不发送 |
 | `pack_password`          | 打包密码                   | 空             | **强烈建议设置，可降低风控** |
 | `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
 | `auto_delete_after_send` | 发送后自动删除             | `true`         |  |

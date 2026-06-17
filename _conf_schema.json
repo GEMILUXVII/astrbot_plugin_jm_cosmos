@@ -65,7 +65,7 @@
   "pack_format": {
     "type": "string",
     "description": "打包格式",
-    "hint": "下载完成后的打包格式。long_img 为纵向拼接长图(过长自动分段并打包为zip)",
+    "hint": "下载完成后的打包格式。long_img 为纵向拼接长图(过长自动分段并打包为zip)；none 为不打包、仅本地保存不发送",
     "default": "zip",
     "options": [
       "zip",

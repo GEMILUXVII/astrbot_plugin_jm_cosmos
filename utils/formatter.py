@@ -362,12 +362,15 @@ day(今日) week(本周) month(本月) all(全部)
                     "zip": "ZIP压缩包",
                     "pdf": "PDF文档",
                     "long_img": "长图",
-                    "none": "原始文件夹",
+                    "none": "不打包",
                 }.get(pack_result.format, pack_result.format)
 
                 lines.append(f"📦 格式: {format_name}")
 
-                if pack_result.encrypted:
+                if pack_result.format == "none":
+                    # none 表示仅本地保存、不发送文件
+                    lines.append(f"📁 已保存到本地（未发送）: {result.save_path}")
+                elif pack_result.encrypted:
                     lines.append("🔐 已加密")
             else:
                 # 打包失败时提示用户

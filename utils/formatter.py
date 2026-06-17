@@ -368,8 +368,8 @@ day(今日) week(本周) month(本月) all(全部)
                 lines.append(f"📦 格式: {format_name}")
 
                 if pack_result.format == "none":
-                    # none 表示仅本地保存、不发送文件
-                    lines.append(f"📁 已保存到本地（未发送）: {result.save_path}")
+                    # none 表示仅本地保存、不发送文件；不暴露服务器绝对路径
+                    lines.append("📁 已保存到本地下载目录（未发送）")
                 elif pack_result.encrypted:
                     lines.append("🔐 已加密")
             else:

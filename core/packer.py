@@ -113,8 +113,21 @@ class JMPacker:
         """打包为ZIP"""
         output_path = output_dir / f"{output_name}.zip"
 
+        # 请求了加密但缺少 pyzipper：失败关闭，不静默产出未加密压缩包
+        if self.password and not PYZIPPER_AVAILABLE:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format="zip",
+                encrypted=False,
+                error_message=(
+                    "已设置打包密码但未安装 pyzipper，无法生成加密 ZIP；"
+                    "请安装 pyzipper 或清空打包密码"
+                ),
+            )
+
         try:
-            if self.password and PYZIPPER_AVAILABLE:
+            if self.password:
                 # 使用pyzipper创建加密ZIP
                 with pyzipper.AESZipFile(
                     output_path,
@@ -143,7 +156,7 @@ class JMPacker:
                 success=True,
                 output_path=output_path,
                 format="zip",
-                encrypted=bool(self.password and PYZIPPER_AVAILABLE),
+                encrypted=bool(self.password),
             )
 
         except Exception as e:

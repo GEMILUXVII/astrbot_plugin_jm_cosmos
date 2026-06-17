@@ -193,3 +193,40 @@ class TestJMPackerCleanup:
         # cleanup 方法逻辑：如果 is_dir() 和 is_file() 都为 False，
         # 则不执行任何删除操作，但也不会抛出异常，因此返回 True
         assert result is True
+
+
+class TestZipEncryptionFailClosed:
+    """请求加密但 pyzipper 不可用时应失败关闭，而非产出未加密 ZIP"""
+
+    def test_password_without_pyzipper_fails_closed(self, temp_dir, monkeypatch):
+        import core.packer as packer_mod
+        from core.packer import JMPacker
+
+        monkeypatch.setattr(packer_mod, "PYZIPPER_AVAILABLE", False)
+
+        src = temp_dir / "imgs"
+        src.mkdir()
+        (src / "001.jpg").write_bytes(b"x")
+
+        result = JMPacker(pack_format="zip", password="secret").pack(src, "album")
+
+        assert result.success is False
+        assert result.encrypted is False
+        assert "pyzipper" in (result.error_message or "")
+        # 不应产出任何 zip 文件
+        assert not list(temp_dir.glob("*.zip"))
+
+    def test_no_password_without_pyzipper_ok(self, temp_dir, monkeypatch):
+        import core.packer as packer_mod
+        from core.packer import JMPacker
+
+        monkeypatch.setattr(packer_mod, "PYZIPPER_AVAILABLE", False)
+
+        src = temp_dir / "imgs2"
+        src.mkdir()
+        (src / "001.jpg").write_bytes(b"x")
+
+        result = JMPacker(pack_format="zip", password="").pack(src, "album2")
+
+        assert result.success is True
+        assert result.encrypted is False

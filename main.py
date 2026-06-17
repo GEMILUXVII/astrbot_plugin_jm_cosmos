@@ -79,12 +79,17 @@ class JMCosmosPlugin(Star):
         if self.debug_mode:
             logger.warning("JM-Cosmos II 调试模式已启用")
 
-        # 启动订阅更新后台检查任务
+        # 启动订阅更新后台检查任务（间隔<=0 表示关闭，不创建任务）
         self._subscription_task = None
-        try:
-            self._subscription_task = asyncio.create_task(self._subscription_loop())
-        except RuntimeError:
-            logger.warning("无法启动订阅后台任务：当前没有运行中的事件循环")
+        if self.config_manager.subscribe_check_interval > 0:
+            try:
+                self._subscription_task = asyncio.create_task(
+                    self._subscription_loop()
+                )
+            except RuntimeError:
+                logger.warning("无法启动订阅后台任务：当前没有运行中的事件循环")
+        else:
+            logger.info("订阅后台检查已关闭 (subscribe_check_interval=0)")
 
         logger.info("JM-Cosmos II 插件初始化完成")
 
@@ -1227,8 +1232,8 @@ class JMCosmosPlugin(Star):
         while True:
             interval = self.config_manager.subscribe_check_interval
             if interval <= 0:
-                await asyncio.sleep(300)
-                continue
+                logger.info("订阅检查间隔为 0，停止后台检查")
+                return
             try:
                 await self._check_subscriptions_once()
             except asyncio.CancelledError:

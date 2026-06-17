@@ -155,12 +155,13 @@ class DownloadQuotaManager:
             conn.execute("COMMIT")
             return True, used + 1, limit
         except Exception as e:
-            logger.error(f"预留配额失败: {e}")
+            # 配额是防滥用的软限制：数据库异常时采取 fail-open（放行本次下载），
+            # 以可用性优先。此处显式告警，便于运维察觉降级。
+            logger.warning(f"配额预留失败，本次降级为放行 (fail-open): {e}")
             try:
                 conn.execute("ROLLBACK")
             except Exception:
                 pass
-            # 数据库异常时放行，避免因配额组件故障阻断下载
             return True, 0, limit
         finally:
             conn.close()

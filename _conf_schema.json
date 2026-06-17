@@ -161,7 +161,7 @@
   "daily_download_limit": {
     "type": "int",
     "description": "每日下载次数限制",
-    "hint": "每个用户每天最多下载次数，0 表示不限制",
+    "hint": "每个用户每天最多下载次数，0 表示不限制。注意：配额数据库异常时会降级放行(fail-open)",
     "default": 0
   },
   "subscribe_check_interval": {

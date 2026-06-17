@@ -205,9 +205,13 @@ class JMCosmosPlugin(Star):
             # 发送开始下载提示
             yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
 
-            # 如果配置了发送封面预览，获取详情和封面
+            # 如果配置了发送封面预览，获取详情和封面（预览失败不应中断下载）
             if self.config_manager.send_cover_preview:
-                detail = await self.browser.get_album_detail(album_id)
+                try:
+                    detail = await self.browser.get_album_detail(album_id)
+                except Exception as preview_err:
+                    logger.debug(f"获取封面预览详情失败，跳过预览: {preview_err}")
+                    detail = None
                 if detail:
                     # 获取封面图片
                     cover_dir = self.config_manager.download_dir / "covers"
@@ -552,7 +556,8 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"搜索失败: {e}")
-            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     @filter.command("jmi")
     async def info_command(self, event: AstrMessageEvent, album_id: str = None):
@@ -620,7 +625,8 @@ class JMCosmosPlugin(Star):
 
         except Exception as e:
             logger.error(f"获取详情失败: {e}")
-            yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
 
     @filter.command("jmrank")
     async def ranking_command(
@@ -1023,7 +1029,13 @@ class JMCosmosPlugin(Star):
 
         yield event.plain_result(f"🔔 正在订阅本子 {album_id}...")
 
-        detail = await self.browser.get_album_detail(album_id)
+        try:
+            detail = await self.browser.get_album_detail(album_id)
+        except Exception as e:
+            logger.error(f"订阅时获取详情失败: {e}")
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
+            return
         if not detail:
             yield event.plain_result(MessageFormatter.format_error("not_found"))
             return

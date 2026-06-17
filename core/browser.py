@@ -49,52 +49,47 @@ class JMBrowser(JMClientMixin):
 
         Returns:
             搜索结果列表
+
+        Raises:
+            异常会向上传播，便于上层用 classify_exception 区分网络/未找到等原因
         """
         if not self.is_available():
             return []
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return []
-
-            return await self._run_sync(
-                self._search_albums_sync, keyword, page, mode, option
-            )
-        except Exception as e:
-            logger.error(f"搜索失败: {e}")
+        option = self._get_option()
+        if option is None:
             return []
+
+        return await self._run_sync(
+            self._search_albums_sync, keyword, page, mode, option
+        )
 
     def _search_albums_sync(
         self, keyword: str, page: int, mode: str, option
     ) -> list[dict]:
-        """同步搜索本子"""
-        try:
-            client = option.new_jm_client()
-            search_method = {
-                "site": client.search_site,
-                "tag": client.search_tag,
-                "author": client.search_author,
-                "actor": client.search_actor,
-                "work": client.search_work,
-            }.get(mode, client.search_site)
-            search_page = search_method(keyword, page)
+        """同步搜索本子（异常向上传播）"""
+        client = option.new_jm_client()
+        search_method = {
+            "site": client.search_site,
+            "tag": client.search_tag,
+            "author": client.search_author,
+            "actor": client.search_actor,
+            "work": client.search_work,
+        }.get(mode, client.search_site)
+        search_page = search_method(keyword, page)
 
-            results = []
-            for album_id, title, tags in search_page.iter_id_title_tag():
-                results.append(
-                    {
-                        "id": album_id,
-                        "title": title,
-                        "author": "",
-                        "tags": tags,
-                        "category": "",
-                    }
-                )
-            return results
-        except Exception as e:
-            logger.error(f"搜索失败: {e}")
-            return []
+        results = []
+        for album_id, title, tags in search_page.iter_id_title_tag():
+            results.append(
+                {
+                    "id": album_id,
+                    "title": title,
+                    "author": "",
+                    "tags": tags,
+                    "category": "",
+                }
+            )
+        return results
 
     # ==================== 详情功能 ====================
 
@@ -107,50 +102,45 @@ class JMBrowser(JMClientMixin):
 
         Returns:
             本子详情字典
+
+        Raises:
+            异常会向上传播，便于上层区分网络失败与本子不存在
         """
         if not self.is_available():
             return None
 
-        try:
-            option = self._get_option()
-            if option is None:
-                return None
-
-            return await self._run_sync(self._get_album_detail_sync, album_id, option)
-        except Exception as e:
-            logger.error(f"获取详情失败: {e}")
+        option = self._get_option()
+        if option is None:
             return None
+
+        return await self._run_sync(self._get_album_detail_sync, album_id, option)
 
     def _get_album_detail_sync(self, album_id: str, option) -> dict | None:
-        """同步获取本子详情"""
-        try:
-            jmcomic = import_jmcomic()
-            if jmcomic is None:
-                return None
-
-            client = option.new_jm_client()
-            parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
-            album = client.get_album_detail(parsed_id)
-
-            return {
-                "id": album.id,
-                "title": album.title,
-                "author": album.author,
-                "tags": album.tags if hasattr(album, "tags") else [],
-                "photo_count": len(album),
-                "pub_date": str(album.pub_date) if hasattr(album, "pub_date") else "",
-                "update_date": str(album.update_date)
-                if hasattr(album, "update_date")
-                else "",
-                "description": album.description
-                if hasattr(album, "description")
-                else "",
-                "likes": album.likes if hasattr(album, "likes") else 0,
-                "views": album.views if hasattr(album, "views") else 0,
-            }
-        except Exception as e:
-            logger.error(f"获取详情失败: {e}")
+        """同步获取本子详情（异常向上传播）"""
+        jmcomic = import_jmcomic()
+        if jmcomic is None:
             return None
+
+        client = option.new_jm_client()
+        parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
+        album = client.get_album_detail(parsed_id)
+
+        return {
+            "id": album.id,
+            "title": album.title,
+            "author": album.author,
+            "tags": album.tags if hasattr(album, "tags") else [],
+            "photo_count": len(album),
+            "pub_date": str(album.pub_date) if hasattr(album, "pub_date") else "",
+            "update_date": str(album.update_date)
+            if hasattr(album, "update_date")
+            else "",
+            "description": album.description
+            if hasattr(album, "description")
+            else "",
+            "likes": album.likes if hasattr(album, "likes") else 0,
+            "views": album.views if hasattr(album, "views") else 0,
+        }
 
     async def get_photo_id_by_index(
         self, album_id: str, chapter_index: int

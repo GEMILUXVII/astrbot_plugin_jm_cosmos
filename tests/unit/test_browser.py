@@ -213,3 +213,43 @@ class TestJMBrowserGetFavorites:
         # 应返回空的收藏列表和收藏夹列表
         assert isinstance(result, tuple)
         assert len(result) == 2
+
+
+class TestBrowserErrorPropagation:
+    """搜索/详情的网络错误应向上传播，而非被吞成空结果/未找到"""
+
+    @pytest.mark.asyncio
+    async def test_get_album_detail_propagates_errors(
+        self, config_manager, monkeypatch
+    ):
+        from core.browser import JMBrowser
+
+        browser = JMBrowser(config_manager)
+        client = MagicMock()
+        client.get_album_detail.side_effect = RuntimeError("network down")
+
+        fake_option = MagicMock()
+        fake_option.new_jm_client.return_value = client
+
+        monkeypatch.setattr(browser, "_get_option", lambda: fake_option)
+        monkeypatch.setattr(JMBrowser, "is_available", staticmethod(lambda: True))
+
+        with pytest.raises(RuntimeError, match="network down"):
+            await browser.get_album_detail("123456")
+
+    @pytest.mark.asyncio
+    async def test_search_albums_propagates_errors(self, config_manager, monkeypatch):
+        from core.browser import JMBrowser
+
+        browser = JMBrowser(config_manager)
+        client = MagicMock()
+        client.search_site.side_effect = RuntimeError("boom")
+
+        fake_option = MagicMock()
+        fake_option.new_jm_client.return_value = client
+
+        monkeypatch.setattr(browser, "_get_option", lambda: fake_option)
+        monkeypatch.setattr(JMBrowser, "is_available", staticmethod(lambda: True))
+
+        with pytest.raises(RuntimeError, match="boom"):
+            await browser.search_albums("keyword")

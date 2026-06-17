@@ -131,12 +131,6 @@ class JMDownloadManager(JMClientMixin):
 
             save_path = Path(option.dir_rule.decide_album_root_dir(album))
 
-            cover_path = None
-            if len(album) > 0:
-                first_photo = album[0]
-                if hasattr(first_photo, "page_arr") and len(first_photo.page_arr) > 0:
-                    cover_path = save_path
-
             return DownloadResult(
                 success=True,
                 album_id=str(album.id),
@@ -145,7 +139,6 @@ class JMDownloadManager(JMClientMixin):
                 photo_count=len(album),
                 image_count=album.page_count,
                 save_path=save_path,
-                cover_path=cover_path,
             )
 
         except Exception as e:

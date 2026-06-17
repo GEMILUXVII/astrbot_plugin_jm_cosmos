@@ -164,3 +164,29 @@ class TestJMDownloadManagerSync:
 
         if not manager.is_available():
             pytest.skip("jmcomic 库未安装")
+
+
+class _FakeDownloader:
+    """用于测试完整性判断的最小下载器替身"""
+
+    def __init__(self, all_success: bool, has_failures: bool):
+        self.all_success = all_success
+        self.has_download_failures = has_failures
+
+
+class TestResolveAllSuccess:
+    """_resolve_all_success：增量下载不应因 do_filter 误报部分失败"""
+
+    def test_full_download_uses_all_success(self):
+        from core.downloader import _resolve_all_success
+
+        assert _resolve_all_success(_FakeDownloader(True, False), 0) is True
+        assert _resolve_all_success(_FakeDownloader(False, True), 0) is False
+
+    def test_incremental_ignores_filtered_all_success(self):
+        from core.downloader import _resolve_all_success
+
+        # 增量下载：all_success 因过滤恒为 False，但无真实失败 -> 视为成功
+        assert _resolve_all_success(_FakeDownloader(False, False), 3) is True
+        # 增量下载：存在真实下载失败 -> False
+        assert _resolve_all_success(_FakeDownloader(False, True), 3) is False

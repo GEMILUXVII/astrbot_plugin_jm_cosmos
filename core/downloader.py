@@ -73,6 +73,19 @@ def _get_progress_downloader_class(jmcomic):
     return _PROGRESS_DOWNLOADER_CLASS
 
 
+def _resolve_all_success(downloader, skip_photos: int) -> bool:
+    """
+    计算下载完整性。
+
+    增量下载（skip_photos > 0）通过 do_filter 过滤了已有章节，jmcomic 的
+    downloader.all_success 会因为章节数不匹配而恒为 False，因此此时只依据是否
+    存在真实下载失败来判断；非增量下载则沿用 all_success。
+    """
+    if skip_photos:
+        return not bool(getattr(downloader, "has_download_failures", False))
+    return bool(getattr(downloader, "all_success", True))
+
+
 @dataclass
 class DownloadResult:
     """下载结果"""
@@ -204,7 +217,7 @@ class JMDownloadManager(JMClientMixin):
 
             failed_images = len(getattr(downloader, "download_failed_image", []))
             failed_images += len(getattr(downloader, "download_failed_photo", []))
-            all_success = bool(getattr(downloader, "all_success", True))
+            all_success = _resolve_all_success(downloader, skip_photos)
 
             return DownloadResult(
                 success=True,

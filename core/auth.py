@@ -30,21 +30,42 @@ class JMAuthManager(JMClientMixin):
         self._try_restore_session()
 
     def _try_restore_session(self) -> None:
-        """尝试从 cookies 文件恢复登录状态"""
+        """尝试从 cookies 文件恢复登录状态（含真实 cookies）"""
         cookies_file = self.config.cookies_file
-        if cookies_file.exists():
-            try:
-                with open(cookies_file, encoding="utf-8") as f:
-                    data = json.load(f)
-                    if data.get("username"):
-                        self._username = data["username"]
-                        # 标记为需要重新验证
-                        logger.info(f"发现已保存的登录信息: {self._username}")
-            except Exception as e:
-                logger.debug(f"读取 cookies 文件失败: {e}")
+        if not cookies_file.exists():
+            return
 
-    def _save_session(self) -> None:
-        """保存登录会话到文件"""
+        try:
+            with open(cookies_file, encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            logger.debug(f"读取 cookies 文件失败: {e}")
+            return
+
+        username = data.get("username")
+        cookies = data.get("cookies")
+
+        # 新格式：带真实 cookies，注入 option 后即视为已登录
+        if username and cookies:
+            try:
+                option = self._get_option()
+                if option is not None:
+                    option.update_cookies(cookies)
+                    self._username = username
+                    self._logged_in = True
+                    self._client = None  # 下次按需用带 cookies 的 option 重建
+                    logger.info(f"已从本地恢复登录会话: {username}")
+                    return
+            except Exception as e:
+                logger.debug(f"恢复登录会话失败: {e}")
+
+        # 旧格式（仅用户名）：保留用户名，仍需重新登录
+        if username:
+            self._username = username
+            logger.info(f"发现已保存的登录用户名: {username}")
+
+    def _save_session(self, cookies: dict | None = None) -> None:
+        """保存登录会话到文件（包含真实 cookies 以便重启后恢复）"""
         if not self._logged_in or not self._username:
             return
 
@@ -54,6 +75,8 @@ class JMAuthManager(JMClientMixin):
                 "username": self._username,
                 "logged_in": True,
             }
+            if cookies:
+                data["cookies"] = cookies
             with open(cookies_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             logger.debug(f"登录信息已保存到: {cookies_file}")
@@ -122,8 +145,13 @@ class JMAuthManager(JMClientMixin):
             self._username = username
             self._client = client
 
-            # 持久化保存
-            self._save_session()
+            # 提取真实 cookies 并持久化，让重启后无需重新登录
+            cookies = None
+            try:
+                cookies = dict(client["cookies"])
+            except Exception as e:
+                logger.debug(f"读取登录 cookies 失败: {e}")
+            self._save_session(cookies)
 
             logger.info(f"用户 {username} 登录成功")
             return True, f"登录成功，欢迎 {username}！"

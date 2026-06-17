@@ -4,6 +4,7 @@ JM-Cosmos II - AstrBot JM漫画下载插件
 支持搜索、下载禁漫天堂的漫画本子，基于jmcomic库
 """
 
+import asyncio
 from pathlib import Path
 
 import astrbot.api.message_components as Comp
@@ -18,6 +19,7 @@ from .core import (
     JMConfigManager,
     JMDownloadManager,
     JMPacker,
+    SubscriptionManager,
     classify_exception,
 )
 from .utils import MessageFormatter, generate_album_filename, send_with_recall
@@ -67,10 +69,22 @@ class JMCosmosPlugin(Star):
         # 初始化下载配额管理器
         self.quota_manager = DownloadQuotaManager(self.data_dir / "quota.db")
 
+        # 初始化订阅管理器
+        self.subscription_manager = SubscriptionManager(
+            self.data_dir / "subscriptions.db"
+        )
+
         # 调试模式
         self.debug_mode = self.config_manager.debug_mode
         if self.debug_mode:
             logger.warning("JM-Cosmos II 调试模式已启用")
+
+        # 启动订阅更新后台检查任务
+        self._subscription_task = None
+        try:
+            self._subscription_task = asyncio.create_task(self._subscription_loop())
+        except RuntimeError:
+            logger.warning("无法启动订阅后台任务：当前没有运行中的事件循环")
 
         logger.info("JM-Cosmos II 插件初始化完成")
 
@@ -948,3 +962,295 @@ class JMCosmosPlugin(Star):
         except Exception as e:
             logger.error(f"获取收藏夹失败: {e}")
             yield event.plain_result(MessageFormatter.format_error("network", str(e)))
+
+    # ==================== 订阅功能 ====================
+
+    @filter.command("jmsub")
+    async def subscribe_command(self, event: AstrMessageEvent, album_id: str = None):
+        """
+        订阅本子更新
+
+        用法: /jmsub <ID>
+        """
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        if album_id is None:
+            yield event.plain_result("❌ 请提供本子ID\n用法: /jmsub <ID>")
+            return
+
+        album_id = str(album_id).strip()
+        if not album_id.isdigit():
+            yield event.plain_result(MessageFormatter.format_error("invalid_id"))
+            return
+
+        umo = event.unified_msg_origin
+        if self.subscription_manager.exists(umo, album_id):
+            yield event.plain_result(f"ℹ️ 本会话已订阅本子 {album_id}")
+            return
+
+        yield event.plain_result(f"🔔 正在订阅本子 {album_id}...")
+
+        detail = await self.browser.get_album_detail(album_id)
+        if not detail:
+            yield event.plain_result(MessageFormatter.format_error("not_found"))
+            return
+
+        title = detail.get("title", "")
+        count = int(detail.get("photo_count", 0) or 0)
+        ok = self.subscription_manager.add(
+            umo, album_id, event.get_sender_id(), title, count
+        )
+        if ok:
+            yield event.plain_result(
+                f"✅ 已订阅【{album_id}】{title}\n"
+                f"当前章节: {count}\n"
+                f"有更新会在本会话提醒"
+            )
+        else:
+            yield event.plain_result("❌ 订阅失败，请稍后重试")
+
+    @filter.command("jmunsub")
+    async def unsubscribe_command(self, event: AstrMessageEvent, album_id: str = None):
+        """
+        取消订阅
+
+        用法: /jmunsub <ID>
+        """
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        if album_id is None:
+            yield event.plain_result("❌ 请提供本子ID\n用法: /jmunsub <ID>")
+            return
+
+        album_id = str(album_id).strip()
+        umo = event.unified_msg_origin
+        if self.subscription_manager.remove(umo, album_id):
+            yield event.plain_result(f"✅ 已取消订阅本子 {album_id}")
+        else:
+            yield event.plain_result(f"ℹ️ 本会话未订阅本子 {album_id}")
+
+    @filter.command("jmsublist")
+    async def subscription_list_command(self, event: AstrMessageEvent):
+        """
+        查看本会话的订阅列表
+
+        用法: /jmsublist
+        """
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        subs = self.subscription_manager.list_for(event.unified_msg_origin)
+        yield event.plain_result(MessageFormatter.format_subscriptions(subs))
+
+    @filter.command("jmupdate")
+    async def update_command(self, event: AstrMessageEvent, album_id: str = None):
+        """
+        下载本子的新增章节（增量下载）
+
+        用法: /jmupdate <ID>
+        """
+        has_perm, error_msg = self._check_permission(event)
+        if not has_perm:
+            yield event.plain_result(error_msg)
+            return
+
+        if album_id is None:
+            yield event.plain_result("❌ 请提供本子ID\n用法: /jmupdate <ID>")
+            return
+
+        album_id = str(album_id).strip()
+        if not album_id.isdigit():
+            yield event.plain_result(MessageFormatter.format_error("invalid_id"))
+            return
+
+        # 下载配额（管理员豁免）
+        user_id = event.get_sender_id()
+        limit = self.config_manager.daily_download_limit
+        is_admin = str(user_id) in self.config_manager.admin_list
+        if limit > 0 and not is_admin:
+            can_download, used, total = self.quota_manager.check_quota(user_id, limit)
+            if not can_download:
+                yield event.plain_result(
+                    f"❌ 今日下载次数已达上限 ({used}/{total})\n请明天再试"
+                )
+                return
+
+        umo = event.unified_msg_origin
+        skip = self.subscription_manager.get_last_count(umo, album_id) or 0
+
+        try:
+            yield event.plain_result(f"⏳ 正在检查本子 {album_id} 的更新...")
+
+            detail = await self.browser.get_album_detail(album_id)
+            if not detail:
+                yield event.plain_result(MessageFormatter.format_error("not_found"))
+                return
+
+            current = int(detail.get("photo_count", 0) or 0)
+            if skip and current <= skip:
+                yield event.plain_result(
+                    f"✅ 本子 {album_id} 暂无新章节（当前 {current} 章）"
+                )
+                return
+
+            new_chapters = current - skip if skip else current
+            scope = f"新增 {new_chapters} 章" if skip else "全部章节"
+            yield event.plain_result(f"📥 开始下载{scope}...")
+
+            result = await self.download_manager.download_album(
+                album_id, self._make_progress_callback(event), skip
+            )
+
+            if not result.success:
+                yield event.plain_result(
+                    MessageFormatter.format_error(
+                        "download_failed", result.error_message
+                    )
+                )
+                return
+
+            output_name = generate_album_filename(
+                album_id=album_id,
+                password=self.config_manager.pack_password,
+                show_password=self.config_manager.filename_show_password,
+            )
+            packer = JMPacker(
+                pack_format=self.config_manager.pack_format,
+                password=self.config_manager.pack_password,
+            )
+            pack_result = packer.pack(
+                source_dir=result.save_path, output_name=output_name
+            )
+
+            if limit > 0:
+                self.quota_manager.consume_quota(user_id)
+
+            # 同步更新订阅记录的已知章节数
+            if self.subscription_manager.exists(umo, album_id):
+                self.subscription_manager.update_count(umo, album_id, current)
+
+            async for msg in self._emit_packed_file(event, result, pack_result):
+                yield msg
+
+        except Exception as e:
+            logger.error(f"增量下载失败: {e}")
+            etype, emsg = classify_exception(e)
+            yield event.plain_result(MessageFormatter.format_error(etype, emsg))
+
+    async def _emit_packed_file(self, event: AstrMessageEvent, result, pack_result):
+        """统一处理打包文件的发送（含自动撤回与清理），供下载类命令复用"""
+        result_msg = MessageFormatter.format_download_result(result, pack_result)
+
+        if (
+            pack_result.success
+            and pack_result.output_path
+            and pack_result.format != "none"
+        ):
+            from astrbot.api.event import MessageChain
+
+            file_chain = MessageChain(
+                [
+                    Comp.Plain(result_msg),
+                    Comp.File(
+                        name=pack_result.output_path.name,
+                        file=str(pack_result.output_path),
+                    ),
+                ]
+            )
+
+            if self.config_manager.auto_recall_enabled:
+                await send_with_recall(
+                    event, file_chain, self.config_manager.auto_recall_delay
+                )
+            else:
+                yield event.chain_result(file_chain.chain)
+
+            if self.config_manager.auto_delete_after_send:
+                JMPacker.cleanup(result.save_path)
+                JMPacker.cleanup(pack_result.output_path)
+        else:
+            yield event.plain_result(result_msg)
+
+    # ==================== 订阅后台检查 ====================
+
+    async def _subscription_loop(self) -> None:
+        """后台定时检查订阅本子是否有新章节"""
+        await asyncio.sleep(30)  # 启动缓冲，避免与初始化争抢
+        while True:
+            interval = self.config_manager.subscribe_check_interval
+            if interval <= 0:
+                await asyncio.sleep(300)
+                continue
+            try:
+                await self._check_subscriptions_once()
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.error(f"订阅检查出错: {e}")
+            await asyncio.sleep(max(60, interval))
+
+    async def _check_subscriptions_once(self) -> None:
+        """检查所有订阅一次，发现更新则通知对应会话"""
+        if not JMBrowser.is_available():
+            return
+
+        subs = self.subscription_manager.list_all()
+        if not subs:
+            return
+
+        for sub in subs:
+            try:
+                detail = await self.browser.get_album_detail(sub["album_id"])
+                if not detail:
+                    continue
+                current = int(detail.get("photo_count", 0) or 0)
+                last = int(sub.get("last_count", 0) or 0)
+                if current > last:
+                    title = detail.get("title") or sub.get("title") or ""
+                    self.subscription_manager.update_count(
+                        sub["umo"], sub["album_id"], current
+                    )
+                    await self._notify_update(
+                        sub["umo"], sub["album_id"], title, last, current
+                    )
+            except Exception as e:
+                logger.debug(f"检查订阅 {sub.get('album_id')} 失败: {e}")
+            await asyncio.sleep(2)  # 轻微限速，降低风控风险
+
+    async def _notify_update(
+        self, umo: str, album_id: str, title: str, last: int, current: int
+    ) -> None:
+        """向订阅会话推送更新通知"""
+        from astrbot.api.event import MessageChain
+
+        text = (
+            f"🔔 订阅更新\n"
+            f"【{album_id}】{title}\n"
+            f"章节: {last} → {current}\n"
+            f"💡 /jmupdate {album_id} 获取新章节，或 /jm {album_id} 下载全部"
+        )
+        try:
+            await self.context.send_message(umo, MessageChain([Comp.Plain(text)]))
+        except Exception as e:
+            logger.warning(f"发送订阅更新通知失败: {e}")
+
+    async def terminate(self) -> None:
+        """插件卸载时取消后台任务"""
+        task = getattr(self, "_subscription_task", None)
+        if task is not None and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                pass
+        logger.info("JM-Cosmos II 插件已卸载")

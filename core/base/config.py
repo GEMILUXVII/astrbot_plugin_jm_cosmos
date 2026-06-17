@@ -173,6 +173,11 @@ class JMConfigManager:
         return self.plugin_config.get("daily_download_limit", 0)
 
     @property
+    def subscribe_check_interval(self) -> int:
+        """订阅更新检查间隔（秒），0 表示关闭后台检查"""
+        return self.plugin_config.get("subscribe_check_interval", 3600)
+
+    @property
     def cookies_file(self) -> Path:
         """Cookies文件路径"""
         return self.data_dir / "cookies.json"

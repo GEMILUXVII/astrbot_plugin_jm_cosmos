@@ -295,6 +295,35 @@ day(今日) week(本周) month(本月) all(全部)
         return "\n".join(lines)
 
     @staticmethod
+    def format_subscriptions(subs: list[dict]) -> str:
+        """
+        格式化订阅列表
+
+        Args:
+            subs: 订阅记录列表（含 album_id/title/last_count）
+
+        Returns:
+            格式化后的字符串
+        """
+        lines = ["🔔 我的订阅", "━━━━━━━━━━━━━━━━━━━━━"]
+
+        if not subs:
+            lines.append("📭 暂无订阅")
+        else:
+            for i, sub in enumerate(subs, 1):
+                title = sub.get("title") or "未知"
+                if len(title) > 30:
+                    title = title[:27] + "..."
+                lines.append(f"{i}. 【{sub.get('album_id', '')}】{title}")
+                lines.append(f"   已记录章节: {sub.get('last_count', 0)}")
+
+        lines.append("━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("💡 /jmsub <ID> 订阅 · /jmunsub <ID> 取消订阅")
+        lines.append("💡 /jmupdate <ID> 下载新章节")
+
+        return "\n".join(lines)
+
+    @staticmethod
     def format_download_result(result, pack_result=None) -> str:
         """
         格式化下载结果
@@ -394,6 +423,12 @@ day(今日) week(本周) month(本月) all(全部)
 /jmlogout   - 登出账号
 /jmstatus   - 查看登录状态
 /jmfav      - 查看我的收藏（需登录）
+
+【订阅命令】
+/jmsub <ID>     - 订阅本子更新
+/jmunsub <ID>   - 取消订阅
+/jmsublist      - 查看订阅列表
+/jmupdate <ID>  - 下载新增章节
 
 【使用示例】
 /jm 123456       - 下载ID为123456的本子

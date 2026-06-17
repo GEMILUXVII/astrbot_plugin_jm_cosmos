@@ -37,6 +37,13 @@ def _get_progress_downloader_class(jmcomic):
             super().__init__(option)
             self.total_images = 0
             self.downloaded_images = 0
+            self.skip_photos = 0  # 增量下载时跳过的前置章节数
+
+        def do_filter(self, detail):
+            # 增量下载：仅对本子跳过前 skip_photos 个章节，其余不过滤
+            if self.skip_photos and detail.is_album():
+                return list(detail)[self.skip_photos :]
+            return detail
 
         def before_album(self, album):
             super().before_album(album)
@@ -97,6 +104,7 @@ class JMDownloadManager(JMClientMixin):
         self,
         album_id: str,
         progress_callback: Callable[[int, int], Any] | None = None,
+        skip_photos: int = 0,
     ) -> DownloadResult:
         """
         异步下载本子
@@ -104,6 +112,7 @@ class JMDownloadManager(JMClientMixin):
         Args:
             album_id: 本子ID
             progress_callback: 进度回调协程 (current, total)，按 25% 步进调用
+            skip_photos: 跳过前 N 个章节（用于增量下载新章节）
 
         Returns:
             DownloadResult 下载结果
@@ -135,7 +144,9 @@ class JMDownloadManager(JMClientMixin):
                 )
 
             return await self._run_with_progress(
-                self._download_album_sync, (album_id, option), progress_callback
+                self._download_album_sync,
+                (album_id, option, skip_photos),
+                progress_callback,
             )
 
         except Exception as e:
@@ -155,6 +166,7 @@ class JMDownloadManager(JMClientMixin):
         self,
         album_id: str,
         option: JmOption,
+        skip_photos: int = 0,
         progress_holder: dict | None = None,
     ) -> DownloadResult:
         """同步下载本子（在线程池中执行）"""
@@ -175,6 +187,7 @@ class JMDownloadManager(JMClientMixin):
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
             downloader_cls = _get_progress_downloader_class(jmcomic)
             downloader = downloader_cls(option)
+            downloader.skip_photos = max(0, int(skip_photos))
             # 暴露下载器实例供上层轮询进度
             if progress_holder is not None:
                 progress_holder["downloader"] = downloader

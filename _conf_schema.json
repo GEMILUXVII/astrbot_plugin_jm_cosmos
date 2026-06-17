@@ -164,6 +164,12 @@
     "hint": "每个用户每天最多下载次数，0 表示不限制",
     "default": 0
   },
+  "subscribe_check_interval": {
+    "type": "int",
+    "description": "订阅检查间隔（秒）",
+    "hint": "后台检查订阅本子更新的间隔秒数，建议>=1800，0 表示关闭订阅功能的后台检查",
+    "default": 3600
+  },
   "debug_mode": {
     "type": "bool",
     "description": "调试模式",

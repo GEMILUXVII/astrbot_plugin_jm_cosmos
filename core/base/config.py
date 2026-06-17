@@ -53,6 +53,17 @@ class JMConfigManager:
         return self.plugin_config.get("client_type", "api")
 
     @property
+    def client_domain(self) -> list[str]:
+        """自定义域名列表（逗号分隔），留空则由 jmcomic 自动选择"""
+        domain_str = self.plugin_config.get("client_domain", "")
+        return [d.strip() for d in domain_str.split(",") if d.strip()]
+
+    @property
+    def retry_times(self) -> int:
+        """请求重试次数，0 表示使用 jmcomic 默认值"""
+        return self.plugin_config.get("retry_times", 0)
+
+    @property
     def use_proxy(self) -> bool:
         """是否使用代理"""
         return self.plugin_config.get("use_proxy", False)
@@ -204,6 +215,12 @@ class JMConfigManager:
             },
             "client": {"impl": self.client_type},
         }
+
+        # 自定义域名与重试次数：留空 / 为 0 时交给 jmcomic 默认处理
+        if self.client_domain:
+            option_dict["client"]["domain"] = self.client_domain
+        if self.retry_times > 0:
+            option_dict["client"]["retry_times"] = self.retry_times
 
         # 添加代理配置
         # 修复 #43: Docker 环境下需要显式禁用代理，否则 jmcomic 会使用默认的系统代理

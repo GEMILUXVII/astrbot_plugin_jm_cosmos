@@ -26,6 +26,18 @@
       "html"
     ]
   },
+  "client_domain": {
+    "type": "string",
+    "description": "自定义域名列表",
+    "hint": "逗号分隔的 JM 域名，留空则由 jmcomic 自动选择；当默认域名被墙时可手动指定，如 18comic.vip,18comic.org",
+    "default": ""
+  },
+  "retry_times": {
+    "type": "int",
+    "description": "请求重试次数",
+    "hint": "网络请求失败时的重试次数，0 表示使用 jmcomic 默认值(5)",
+    "default": 0
+  },
   "use_proxy": {
     "type": "bool",
     "description": "是否使用代理",

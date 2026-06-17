@@ -822,7 +822,7 @@ class JMCosmosPlugin(Star):
         self, event: AstrMessageEvent, username: str = None, password: str = None
     ):
         """
-        登录JM账号
+        登录JM账号（仅限私聊）
 
         用法: /jmlogin <用户名> <密码>
         示例: /jmlogin myuser mypass
@@ -831,6 +831,16 @@ class JMCosmosPlugin(Star):
         has_perm, error_msg = self._check_permission(event)
         if not has_perm:
             yield event.plain_result(error_msg)
+            return
+
+        # 安全：禁止在群聊中登录，避免账号密码暴露在群消息/历史/日志中
+        if event.get_group_id():
+            yield event.plain_result(
+                "⚠️ 出于安全考虑，请勿在群聊中发送账号密码\n"
+                "请私聊机器人使用 /jmlogin <用户名> <密码>\n"
+                "💡 也可在管理面板配置账号密码实现自动登录\n"
+                "建议尽快撤回上面包含密码的消息"
+            )
             return
 
         # 参数检查

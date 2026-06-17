@@ -83,7 +83,7 @@
   "filename_show_password": {
     "type": "bool",
     "description": "文件名显示密码",
-    "hint": "开启后在文件名末尾添加 #PWxxx 提示（仅当设置了密码时生效）",
+    "hint": "开启后在文件名末尾添加 #PWxxx 提示（仅当设置了密码时生效）。注意：会把打包密码暴露在文件名/聊天记录/日志中，请谨慎开启",
     "default": false
   },
   "auto_delete_after_send": {

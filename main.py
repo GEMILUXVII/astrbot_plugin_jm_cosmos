@@ -83,6 +83,7 @@ class JMCosmosPlugin(Star):
         self.debug_mode = self.config_manager.debug_mode
         if self.debug_mode:
             logger.warning("JM-Cosmos II 调试模式已启用")
+            self._enable_jmcomic_debug_dump()
 
         # 启动订阅更新后台检查任务（间隔<=0 表示关闭，不创建任务）
         self._subscription_task = None
@@ -97,6 +98,30 @@ class JMCosmosPlugin(Star):
             logger.info("订阅后台检查已关闭 (subscribe_check_interval=0)")
 
         logger.info("JM-Cosmos II 插件初始化完成")
+
+    def _enable_jmcomic_debug_dump(self) -> None:
+        """调试模式下让 jmcomic 在 HTML 正则解析失败时把网页转储到文件，便于排查。
+
+        FLAG_DUMP_HTML_ON_REGEX_ERROR 是 jmcomic 2.7.0 新增的开关；旧版本没有该
+        属性，hasattr 判断后即为无操作，因此对 <2.7.0 安全。转储文件位于运行工作
+        目录的 jmcomic_debug/ 下（由 jmcomic 决定）。
+        """
+        try:
+            from .core.jmcomic_loader import import_jmcomic
+
+            jmcomic = import_jmcomic()
+            if jmcomic is None:
+                return
+            cfg = jmcomic.JmModuleConfig
+            if hasattr(cfg, "FLAG_DUMP_HTML_ON_REGEX_ERROR"):
+                cfg.FLAG_DUMP_HTML_ON_REGEX_ERROR = True
+                logger.info(
+                    "已开启 jmcomic 解析失败网页转储 "
+                    "(FLAG_DUMP_HTML_ON_REGEX_ERROR)；失败网页将存于工作目录 "
+                    "jmcomic_debug/ 下"
+                )
+        except Exception as e:
+            logger.debug(f"开启 jmcomic 调试转储失败（忽略）: {e}")
 
     def _check_permission(self, event: AstrMessageEvent) -> tuple[bool, str]:
         """

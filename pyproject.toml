@@ -5,7 +5,7 @@ description = "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "jmcomic>=2.6.10",
+    "jmcomic>=2.7.0",
     "pymupdf>=1.23.0",
     "pyzipper>=0.3.6",
 ]

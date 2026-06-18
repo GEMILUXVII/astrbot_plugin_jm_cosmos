@@ -2,6 +2,19 @@
 
 所有版本更新记录。
 
+## **v2.7.3** (2026-06-18)
+
+### 改进
+- **适配 jmcomic 2.7.0** - 依赖下限提升到 `jmcomic>=2.7.0`
+  - 经验证为 drop-in 升级：插件使用的同步 API（option 构建、`JmDownloader` 子类、搜索/详情/排行/分类/封面/收藏等）在 2.7.0 上行为不变，无需改动核心逻辑
+  - 既有收藏修复（POST `/favorite`、透传 username）在 2.7.0 仍然必要且有效——2.7.0 未修复 `JmApiClient.add_favorite_album` 仍以 GET 请求的问题
+- **调试网页转储** - 调试模式下开启 jmcomic 2.7.0 新增的 `FLAG_DUMP_HTML_ON_REGEX_ERROR`，HTML 正则解析失败时自动把网页存到运行工作目录的 `jmcomic_debug/` 下，便于定位解析问题；旧版本无此开关时自动跳过（`hasattr` 守护）
+
+### 文档
+- 更新版本号与更新时间
+
+---
+
 ## **v2.7.2** (2026-06-18)
 
 ### Bug 修复

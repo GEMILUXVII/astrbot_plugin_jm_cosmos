@@ -71,52 +71,6 @@ class DownloadQuotaManager:
             logger.error(f"查询配额失败: {e}")
             return 0
 
-    def check_quota(self, user_id: str, limit: int) -> tuple[bool, int, int]:
-        """
-        检查用户是否可以下载
-
-        Args:
-            user_id: 用户 QQ 号
-            limit: 每日下载限制次数
-
-        Returns:
-            (是否可下载, 已用次数, 限制次数)
-        """
-        if limit <= 0:
-            return True, 0, 0  # 限制为 0 表示不限制
-
-        used = self.get_used_count(user_id)
-        can_download = used < limit
-        return can_download, used, limit
-
-    def consume_quota(self, user_id: str) -> int:
-        """
-        消耗一次配额
-
-        Args:
-            user_id: 用户 QQ 号
-
-        Returns:
-            消耗后的已用次数
-        """
-        try:
-            today = self._get_today()
-            with self._get_connection() as conn:
-                # 使用 UPSERT 语法，原子操作
-                conn.execute(
-                    """
-                    INSERT INTO download_quota (user_id, date, count)
-                    VALUES (?, ?, 1)
-                    ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1
-                    """,
-                    (str(user_id), today),
-                )
-                conn.commit()
-            return self.get_used_count(user_id)
-        except Exception as e:
-            logger.error(f"消耗配额失败: {e}")
-            return 0
-
     def reserve(self, user_id: str, limit: int) -> tuple[bool, int, int]:
         """
         原子地预留一次配额：在单个事务内检查并自增，避免并发 TOCTOU。
@@ -181,22 +135,6 @@ class DownloadQuotaManager:
                 conn.commit()
         except Exception as e:
             logger.error(f"返还配额失败: {e}")
-
-    def get_remaining(self, user_id: str, limit: int) -> int | None:
-        """
-        获取剩余次数
-
-        Args:
-            user_id: 用户 QQ 号
-            limit: 每日下载限制次数
-
-        Returns:
-            剩余次数，如果不限制则返回 None
-        """
-        if limit <= 0:
-            return None
-        used = self.get_used_count(user_id)
-        return max(0, limit - used)
 
     def cleanup_old_data(self, days: int = 7):
         """

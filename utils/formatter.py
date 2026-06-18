@@ -291,6 +291,7 @@ day(今日) week(本周) month(本月) all(全部)
         lines.append("💡 使用 /jmfav <页码> 翻页")
         lines.append("💡 使用 /jmfav <页码> <收藏夹ID> 查看特定收藏夹")
         lines.append("💡 使用 /jmfav add <本子ID> 收藏本子")
+        lines.append("💡 使用 /jmfav del <本子ID> 取消收藏")
 
         return "\n".join(lines)
 
@@ -425,7 +426,7 @@ day(今日) week(本周) month(本月) all(全部)
 /jmlogin <用户名> <密码> - 登录JM账号
 /jmlogout   - 登出账号
 /jmstatus   - 查看登录状态
-/jmfav      - 查看我的收藏（需登录）
+/jmfav      - 查看我的收藏（add/del 收藏或取消，需登录）
 
 【订阅命令】
 /jmsub <ID>     - 订阅本子更新

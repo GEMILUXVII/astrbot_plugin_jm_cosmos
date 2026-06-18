@@ -399,7 +399,7 @@ class JMBrowser(JMClientMixin):
     # ==================== 收藏夹功能 ====================
 
     async def get_favorites(
-        self, client, page: int = 1, folder_id: str = "0"
+        self, client, page: int = 1, folder_id: str = "0", username: str = ""
     ) -> tuple[list[dict], list[dict]]:
         """
         获取收藏夹内容
@@ -408,6 +408,10 @@ class JMBrowser(JMClientMixin):
             client: 已登录的客户端
             page: 页码
             folder_id: 收藏夹ID，默认为 "0"（全部收藏）
+            username: 登录用户名。HTML 客户端的 favorite_folder 需要它来拼接
+                /user/<name>/favorite/albums，否则会抛“需要传username参数”；
+                API 客户端忽略该参数（用会话）。每次新建的 client 不带 _username，
+                故必须由上层（已知当前登录用户）显式传入。
 
         Returns:
             (收藏列表, 收藏夹列表)
@@ -415,13 +419,17 @@ class JMBrowser(JMClientMixin):
         if not self.is_available():
             return [], []
 
-        return await self._run_sync(self._get_favorites_sync, client, page, folder_id)
+        return await self._run_sync(
+            self._get_favorites_sync, client, page, folder_id, username
+        )
 
     def _get_favorites_sync(
-        self, client, page: int, folder_id: str
+        self, client, page: int, folder_id: str, username: str = ""
     ) -> tuple[list[dict], list[dict]]:
         """同步获取收藏夹内容（异常向上传播）"""
-        fav_page = client.favorite_folder(page=page, folder_id=folder_id)
+        fav_page = client.favorite_folder(
+            page=page, folder_id=folder_id, username=username
+        )
 
         # 获取收藏的本子
         albums = []
@@ -435,10 +443,10 @@ class JMBrowser(JMClientMixin):
 
         # 获取收藏夹列表
         folders = []
-        for folder_id, folder_name in fav_page.iter_folder_id_name():
+        for fid, folder_name in fav_page.iter_folder_id_name():
             folders.append(
                 {
-                    "id": folder_id,
+                    "id": fid,
                     "name": folder_name,
                 }
             )
@@ -448,8 +456,7 @@ class JMBrowser(JMClientMixin):
     async def add_favorite(
         self, client, album_id: str, folder_id: str = "0"
     ) -> tuple[bool, str]:
-        """
-        收藏指定本子
+        """收藏指定本子（幂等：已收藏则提示无需重复添加）。
 
         Args:
             client: 已登录的客户端
@@ -464,28 +471,53 @@ class JMBrowser(JMClientMixin):
 
         try:
             return await self._run_sync(
-                self._add_favorite_sync, client, album_id, folder_id
+                self._set_favorite_sync, client, album_id, folder_id, True
             )
         except Exception as e:
             logger.error(f"收藏操作失败: {e}")
-            return False, str(e)
+            return False, str(e) or type(e).__name__
 
-    def _add_favorite_sync(
-        self, client, album_id: str, folder_id: str
+    async def remove_favorite(
+        self, client, album_id: str, folder_id: str = "0"
     ) -> tuple[bool, str]:
-        """同步收藏本子（幂等：已收藏则不再重复切换）。
+        """取消收藏指定本子（幂等：本就不在收藏夹则提示无需取消）。
 
-        踩过的三个坑：
+        Args:
+            client: 已登录的客户端
+            album_id: 本子ID
+            folder_id: 收藏夹ID
+
+        Returns:
+            (成功与否, 消息)
+        """
+        if not self.is_available():
+            return False, "jmcomic 库未安装"
+
+        try:
+            return await self._run_sync(
+                self._set_favorite_sync, client, album_id, folder_id, False
+            )
+        except Exception as e:
+            logger.error(f"取消收藏操作失败: {e}")
+            return False, str(e) or type(e).__name__
+
+    def _set_favorite_sync(
+        self, client, album_id: str, folder_id: str, want_favorite: bool
+    ) -> tuple[bool, str]:
+        """同步设置收藏状态（幂等）。
+
+        want_favorite=True 表示确保“已收藏”，False 表示确保“已取消”。
+
+        踩过的坑：
         1) 会话隔离：插件默认走 API（移动端）登录，得到的会话(AVS)只对 API 端
-           有效，对网页(HTML)端无效。早期用 HTML 客户端的 /ajax/favorite_album
-           会被服务端判为“未登录”，返回空响应，收藏失败且错误信息为空。所以
-           必须复用登录所用的同一客户端。
-        2) jmcomic 的 JmApiClient.add_favorite_album 有 bug：以 GET 请求
-           /favorite（等同“列收藏”，响应无 status 字段，触发 KeyError('status')），
-           故这里绕过它直接 POST /favorite。
-        3) /favorite 是“切换(toggle)”而非“只加”：对已收藏的本子再调一次会把它
-           取消掉。为避免“点添加反而取消”，这里先用 /album 的 is_favorite 字段
-           判断，已收藏直接返回，未收藏才执行切换（即添加）。
+           有效。早期用 HTML 客户端的 /ajax/favorite_album 会被服务端判为“未登录”，
+           返回空响应导致失败且错误信息为空。因此必须复用登录所用的同一客户端。
+        2) jmcomic 的 JmApiClient.add_favorite_album 以 GET 请求 /favorite（等同
+           “列收藏”，响应无 status 字段，触发 KeyError('status')），故 API 端绕过
+           它直接 POST /favorite。
+        3) /favorite 与 /ajax/favorite_album 都是“切换(toggle)”：对已是目标状态
+           的本子再调一次会反向。为此 API 端先用 /album 的 is_favorite 判断，仅当
+           当前状态与目标不一致时才切换，避免“点添加反而取消”。
         """
         try:
             jmcomic = import_jmcomic()
@@ -503,15 +535,21 @@ class JMBrowser(JMClientMixin):
             client_key = getattr(type(client), "client_key", "api")
 
             if client_key == "html":
-                # 网页端会话：网页接口失败时会抛出带可读 msg 的异常
+                # 网页端无 is_favorite 预检，直接切换（best-effort）；失败会抛带 msg 的异常
                 client.add_favorite_album(parsed_id, folder_id)
-                return True, f"收藏成功（本子 {album_id}）"
+                if want_favorite:
+                    return True, f"收藏成功（本子 {album_id}）"
+                return True, f"已切换收藏状态（本子 {album_id}）"
 
-            # API（移动端）：先查是否已收藏，规避 /favorite 的 toggle 误删
-            if self._is_favorite_api(client, parsed_id) is True:
+            # API（移动端）：先查当前是否已收藏，规避 /favorite 的 toggle 误操作
+            current = self._is_favorite_api(client, parsed_id)
+            if current is True and want_favorite:
                 return True, f"本子 {album_id} 已在收藏夹中，无需重复添加"
+            if current is False and not want_favorite:
+                return True, f"本子 {album_id} 不在收藏夹中，无需取消"
 
-            # 未收藏 → POST /favorite 完成添加（GET /favorite 是“列收藏”，必须 POST）
+            # 当前状态与目标不一致（或无法查询）→ POST /favorite 切换
+            # （GET /favorite 是“列收藏”，必须 POST）
             resp = client.req_api("/favorite", False, data={"aid": parsed_id})
             data = resp.model_data
             src = (
@@ -522,8 +560,14 @@ class JMBrowser(JMClientMixin):
             status = src.get("status")
             server_msg = (src.get("msg") or "").strip()
             if status == "ok":
-                return True, server_msg or f"收藏成功（本子 {album_id}）"
-            return False, server_msg or f"收藏失败（status={status}）"
+                default = (
+                    f"收藏成功（本子 {album_id}）"
+                    if want_favorite
+                    else f"已取消收藏（本子 {album_id}）"
+                )
+                return True, server_msg or default
+            action = "收藏" if want_favorite else "取消收藏"
+            return False, server_msg or f"{action}失败（status={status}）"
         except Exception as e:
             logger.error(f"收藏操作失败: {e}")
             return False, str(e) or type(e).__name__

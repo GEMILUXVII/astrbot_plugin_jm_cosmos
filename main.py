@@ -68,6 +68,11 @@ class JMCosmosPlugin(Star):
 
         # 初始化下载配额管理器
         self.quota_manager = DownloadQuotaManager(self.data_dir / "quota.db")
+        # 顺手清理过期配额数据，避免 quota.db 随时间无限增长
+        try:
+            self.quota_manager.cleanup_old_data()
+        except Exception as e:
+            logger.debug(f"清理过期配额数据失败（忽略）: {e}")
 
         # 初始化订阅管理器
         self.subscription_manager = SubscriptionManager(
@@ -942,13 +947,15 @@ class JMCosmosPlugin(Star):
         self, event: AstrMessageEvent, arg1: str = None, arg2: str = None
     ):
         """
-        查看我的收藏 / 收藏本子
+        查看我的收藏 / 收藏 / 取消收藏本子
 
         用法:
           /jmfav [页码] [收藏夹ID]   查看收藏
           /jmfav add <本子ID>        收藏指定本子
+          /jmfav del <本子ID>        取消收藏指定本子
         示例: /jmfav 1
         示例: /jmfav add 123456
+        示例: /jmfav del 123456
         """
         # 权限检查
         has_perm, error_msg = self._check_permission(event)
@@ -964,21 +971,32 @@ class JMCosmosPlugin(Star):
 
         client = self.auth_manager.get_client()
 
-        # 子命令：收藏本子
-        if arg1 is not None and str(arg1).lower().strip() == "add":
+        # 子命令：收藏 / 取消收藏本子
+        sub = str(arg1).lower().strip() if arg1 is not None else ""
+        if sub in ("add", "del", "remove"):
+            is_add = sub == "add"
             album_id = str(arg2).strip() if arg2 is not None else ""
             if not album_id.isdigit():
+                verb = "add" if is_add else "del"
                 yield event.plain_result(
-                    "❌ 请提供有效的本子ID\n用法: /jmfav add <本子ID>\n示例: /jmfav add 123456"
+                    f"❌ 请提供有效的本子ID\n用法: /jmfav {verb} <本子ID>\n"
+                    f"示例: /jmfav {verb} 123456"
                 )
                 return
 
-            yield event.plain_result(f"⭐ 正在收藏本子 {album_id}...")
-            success, msg = await self.browser.add_favorite(client, album_id)
+            if is_add:
+                yield event.plain_result(f"⭐ 正在收藏本子 {album_id}...")
+                success, msg = await self.browser.add_favorite(client, album_id)
+                fail_prefix = "收藏失败"
+            else:
+                yield event.plain_result(f"🗑️ 正在取消收藏本子 {album_id}...")
+                success, msg = await self.browser.remove_favorite(client, album_id)
+                fail_prefix = "取消收藏失败"
+
             if success:
                 yield event.plain_result(f"✅ {msg}")
             else:
-                yield event.plain_result(f"❌ 收藏失败: {msg}")
+                yield event.plain_result(f"❌ {fail_prefix}: {msg}")
             return
 
         # 默认：查看收藏夹
@@ -995,7 +1013,9 @@ class JMCosmosPlugin(Star):
         try:
             yield event.plain_result(f"⭐ 正在获取收藏夹第{page}页...")
 
-            albums, folders = await self.browser.get_favorites(client, page, folder_id)
+            albums, folders = await self.browser.get_favorites(
+                client, page, folder_id, self.auth_manager.current_user or ""
+            )
 
             result_msg = MessageFormatter.format_favorites(albums, folders, page)
             yield event.plain_result(result_msg)

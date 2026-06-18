@@ -473,27 +473,76 @@ class JMBrowser(JMClientMixin):
     def _add_favorite_sync(
         self, client, album_id: str, folder_id: str
     ) -> tuple[bool, str]:
-        """同步收藏本子。
+        """同步收藏本子（幂等：已收藏则不再重复切换）。
 
-        统一走 HTML 客户端的 /ajax/favorite_album：API 客户端的 /favorite 在
-        jmcomic 现有实现下会以 GET 发送 aid，等同于“列收藏”，返回的响应没有
-        status 字段，导致 KeyError('status')。登录会话已存于 option，HTML
-        客户端会带上同一 cookie。传入的 client 仅作占位，这里不使用。
+        踩过的三个坑：
+        1) 会话隔离：插件默认走 API（移动端）登录，得到的会话(AVS)只对 API 端
+           有效，对网页(HTML)端无效。早期用 HTML 客户端的 /ajax/favorite_album
+           会被服务端判为“未登录”，返回空响应，收藏失败且错误信息为空。所以
+           必须复用登录所用的同一客户端。
+        2) jmcomic 的 JmApiClient.add_favorite_album 有 bug：以 GET 请求
+           /favorite（等同“列收藏”，响应无 status 字段，触发 KeyError('status')），
+           故这里绕过它直接 POST /favorite。
+        3) /favorite 是“切换(toggle)”而非“只加”：对已收藏的本子再调一次会把它
+           取消掉。为避免“点添加反而取消”，这里先用 /album 的 is_favorite 字段
+           判断，已收藏直接返回，未收藏才执行切换（即添加）。
         """
         try:
             jmcomic = import_jmcomic()
             if jmcomic is None:
                 return False, "jmcomic 库未安装"
 
-            option = self._get_option()
-            if option is None:
-                return False, "无法创建下载配置"
+            # 复用登录所用的客户端（携带有效会话）；缺省时按配置新建
+            if client is None:
+                option = self._get_option()
+                if option is None:
+                    return False, "无法创建下载配置"
+                client = option.new_jm_client()
 
-            html_client = option.new_jm_client(impl="html")
             parsed_id = jmcomic.JmcomicText.parse_to_jm_id(album_id)
-            # HTML 客户端的 add_favorite_album 在失败时会抛出带可读 msg 的异常
-            html_client.add_favorite_album(parsed_id, folder_id)
-            return True, f"收藏操作成功（本子 {album_id}）"
+            client_key = getattr(type(client), "client_key", "api")
+
+            if client_key == "html":
+                # 网页端会话：网页接口失败时会抛出带可读 msg 的异常
+                client.add_favorite_album(parsed_id, folder_id)
+                return True, f"收藏成功（本子 {album_id}）"
+
+            # API（移动端）：先查是否已收藏，规避 /favorite 的 toggle 误删
+            if self._is_favorite_api(client, parsed_id) is True:
+                return True, f"本子 {album_id} 已在收藏夹中，无需重复添加"
+
+            # 未收藏 → POST /favorite 完成添加（GET /favorite 是“列收藏”，必须 POST）
+            resp = client.req_api("/favorite", False, data={"aid": parsed_id})
+            data = resp.model_data
+            src = (
+                data.src_dict
+                if hasattr(data, "src_dict")
+                else (data if isinstance(data, dict) else {})
+            )
+            status = src.get("status")
+            server_msg = (src.get("msg") or "").strip()
+            if status == "ok":
+                return True, server_msg or f"收藏成功（本子 {album_id}）"
+            return False, server_msg or f"收藏失败（status={status}）"
         except Exception as e:
             logger.error(f"收藏操作失败: {e}")
-            return False, str(e)
+            return False, str(e) or type(e).__name__
+
+    @staticmethod
+    def _is_favorite_api(client, parsed_id) -> bool | None:
+        """查询当前登录账号是否已收藏该本子。
+
+        读取 API /album 响应里的 is_favorite 字段（按登录账号返回）。
+        返回 True/False；查询失败返回 None，调用方据此回退到直接切换。
+        """
+        try:
+            resp = client.req_api("/album", params={"id": parsed_id})
+            data = resp.model_data
+            src = (
+                data.src_dict
+                if hasattr(data, "src_dict")
+                else (data if isinstance(data, dict) else {})
+            )
+            return bool(src.get("is_favorite"))
+        except Exception:
+            return None

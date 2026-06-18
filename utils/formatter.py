@@ -382,7 +382,9 @@ day(今日) week(本周) month(本月) all(全部)
         return "\n".join(lines)
 
     @staticmethod
-    def format_download_progress(status: str, current: int, total: int) -> str:
+    def format_download_progress(
+        status: str, current: int, total: int, unit: str = ""
+    ) -> str:
         """
         格式化下载进度
 
@@ -390,6 +392,7 @@ day(今日) week(本周) month(本月) all(全部)
             status: 状态描述
             current: 当前进度
             total: 总数
+            unit: 进度单位（如“图片”/“章节”），为空则不显示
 
         Returns:
             格式化后的字符串
@@ -399,7 +402,8 @@ day(今日) week(本周) month(本月) all(全部)
             bar_length = 10
             filled = int(bar_length * current / total)
             bar = "█" * filled + "░" * (bar_length - filled)
-            return f"⏳ {status}\n[{bar}] {percent}% ({current}/{total})"
+            count = f"{current}/{total} {unit}".rstrip()
+            return f"⏳ {status}\n[{bar}] {percent}% ({count})"
         else:
             return f"⏳ {status}..."
 

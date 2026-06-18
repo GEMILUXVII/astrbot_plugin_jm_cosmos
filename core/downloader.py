@@ -31,12 +31,22 @@ def _get_progress_downloader_class(jmcomic):
         return _PROGRESS_DOWNLOADER_CLASS
 
     class _ProgressDownloader(jmcomic.JmDownloader):
-        """记录已下载图片数与总数，供上层轮询展示进度。"""
+        """记录下载进度，供上层轮询展示。
+
+        进度口径（重要）：
+        - 多章节相册：按“章节”计。API 端 album.page_count 恒为 0（jmcomic 的
+          post_adapt_album 写死），且无法低成本获知全相册图片总数。旧实现把分母
+          退化成“第一章图片数”，于是多章节本子进度很早冲到 ~76% 后冻结，而后台
+          仍在下其余章节。
+        - 单章节相册 / 单章下载（/jmc）：按“图片”计。
+        """
 
         def __init__(self, option):
             super().__init__(option)
             self.total_images = 0
             self.downloaded_images = 0
+            self.total_photos = 0  # 相册章节总数（多章节按章计进度）
+            self.downloaded_photos = 0
             self.skip_photos = 0  # 增量下载时跳过的前置章节数
 
         def create_client(self):
@@ -51,23 +61,34 @@ def _get_progress_downloader_class(jmcomic):
 
         def before_album(self, album):
             super().before_album(album)
+            # 用章节总数（扣除增量跳过的章节）作为相册进度分母
             try:
-                self.total_images = album.page_count
+                self.total_photos = max(0, len(album) - self.skip_photos)
             except Exception:
-                pass
+                self.total_photos = 0
 
         def before_photo(self, photo):
             super().before_photo(photo)
-            # 单章下载没有 album，用章节图片数作为总数
-            if not self.total_images:
+            # 单章场景（/jmc 无 album，或单章节相册）才按图片数计进度
+            if self.total_photos <= 1 and not self.total_images:
                 try:
                     self.total_images = len(photo)
                 except Exception:
                     pass
 
+        def after_photo(self, photo):
+            super().after_photo(photo)
+            self.downloaded_photos += 1
+
         def after_image(self, image, img_save_path):
             super().after_image(image, img_save_path)
             self.downloaded_images += 1
+
+        def progress_view(self):
+            """返回 (已完成, 总数, 单位)；多章节相册按章节，否则按图片。"""
+            if self.total_photos > 1:
+                return self.downloaded_photos, self.total_photos, "章节"
+            return self.downloaded_images, self.total_images, "图片"
 
     _PROGRESS_DOWNLOADER_CLASS = _ProgressDownloader
     return _PROGRESS_DOWNLOADER_CLASS
@@ -219,13 +240,16 @@ class JMDownloadManager(JMClientMixin):
             failed_images += len(getattr(downloader, "download_failed_photo", []))
             all_success = _resolve_all_success(downloader, skip_photos)
 
+            # API 端 album.page_count 恒为 0，改用下载器实际累计的图片数作为图片总数
+            image_count = getattr(downloader, "downloaded_images", 0) or album.page_count
+
             return DownloadResult(
                 success=True,
                 album_id=str(album.id),
                 title=album.title,
                 author=album.author,
                 photo_count=len(album),
-                image_count=album.page_count,
+                image_count=image_count,
                 save_path=save_path,
                 all_success=all_success,
                 failed_images=failed_images,
@@ -383,24 +407,28 @@ class JMDownloadManager(JMClientMixin):
     async def _poll_progress(
         task: asyncio.Task,
         progress_holder: dict,
-        progress_callback: Callable[[int, int], Any],
+        progress_callback: Callable[..., Any],
         interval: float = 2.0,
     ) -> None:
-        """轮询下载器的图片计数，按 25% 步进回调进度（避免刷屏）。"""
+        """轮询下载器进度，按 ~10% 步进回调（避免刷屏，又不至于最后一段长时间无反馈）。
+
+        进度口径由下载器的 progress_view 决定（多章节相册按章节、否则按图片），
+        回调签名为 (done, total, unit)。
+        """
         last_bucket = -1
         while not task.done():
             await asyncio.sleep(interval)
             downloader = progress_holder.get("downloader")
-            if downloader is None:
+            view = getattr(downloader, "progress_view", None)
+            if view is None:
                 continue
-            total = getattr(downloader, "total_images", 0)
-            done = getattr(downloader, "downloaded_images", 0)
+            done, total, unit = view()
             if total <= 0 or done <= 0 or done >= total:
                 continue
-            bucket = int(done * 4 / total)
+            bucket = int(done * 10 / total)
             if bucket != last_bucket:
                 last_bucket = bucket
                 try:
-                    await progress_callback(done, total)
+                    await progress_callback(done, total, unit)
                 except Exception:
                     pass

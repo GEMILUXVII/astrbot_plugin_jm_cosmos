@@ -150,14 +150,14 @@ class JMCosmosPlugin(Star):
 
         from astrbot.api.event import MessageChain
 
-        async def _on_progress(done: int, total: int) -> None:
+        async def _on_progress(done: int, total: int, unit: str = "图片") -> None:
             try:
                 await event.send(
                     MessageChain(
                         [
                             Comp.Plain(
                                 MessageFormatter.format_download_progress(
-                                    "下载中", done, total
+                                    "下载中", done, total, unit
                                 )
                             )
                         ]

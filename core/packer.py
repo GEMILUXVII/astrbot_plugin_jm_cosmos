@@ -3,6 +3,7 @@ JMComic 打包模块 - 支持加密ZIP和PDF
 """
 
 import os
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,32 @@ _LONG_IMG_WIDTH = 1200  # 统一宽度，所有图片缩放到此宽度后纵向
 _LONG_IMG_MAX_STRIP_HEIGHT = 12000  # 单段长图最大高度，超出则分段
 _LONG_IMG_MAX_PER_STRIP = 30  # 单段长图最多包含的图片数
 _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+
+def _collect_images_sorted(source_dir: Path) -> list[Path]:
+    """递归收集图片并按“自然顺序”排序。
+
+    多章节本子按 Bd/Aid/Pindex 落盘，章节目录是 1、2、…、10、…、241。普通
+    字符串排序会得到 1,10,11,…,2,20 的错误顺序；这里把路径中的数字段按整数比较，
+    保证按 (章节, 页码) 的真实阅读顺序排列，PDF / 长图才不会乱序。
+    """
+
+    def natural_key(path: Path):
+        rel = str(path.relative_to(source_dir))
+        # 数字段按整数比较、其余按小写字符串比较；用 (类型标记, 值) 元组避免 int 与 str 直接比较
+        return [
+            (0, int(token)) if token.isdigit() else (1, token.lower())
+            for token in re.split(r"(\d+)", rel)
+        ]
+
+    files = [
+        Path(root) / name
+        for root, _dirs, names in os.walk(source_dir)
+        for name in names
+        if (Path(root) / name).suffix.lower() in _IMAGE_EXTENSIONS
+    ]
+    files.sort(key=natural_key)
+    return files
 
 
 @dataclass
@@ -184,15 +211,8 @@ class JMPacker:
         output_path = output_dir / f"{output_name}.pdf"
 
         try:
-            # 收集所有图片文件
-            image_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
-            image_files: list[Path] = []
-
-            for root, dirs, files in os.walk(source_dir):
-                for file in sorted(files):  # 按文件名排序
-                    file_path = Path(root) / file
-                    if file_path.suffix.lower() in image_extensions:
-                        image_files.append(file_path)
+            # 收集所有图片文件（自然顺序，正确跨章节排序）
+            image_files = _collect_images_sorted(source_dir)
 
             if not image_files:
                 return PackResult(
@@ -274,14 +294,8 @@ class JMPacker:
                 error_message="Pillow 库未安装，无法生成长图",
             )
 
-        # 收集所有图片文件（按完整路径排序，保证章节/页码顺序）
-        image_files: list[Path] = []
-        for root, _dirs, files in os.walk(source_dir):
-            for file in files:
-                file_path = Path(root) / file
-                if file_path.suffix.lower() in _IMAGE_EXTENSIONS:
-                    image_files.append(file_path)
-        image_files.sort()
+        # 收集所有图片文件（自然顺序，保证章节/页码阅读顺序）
+        image_files = _collect_images_sorted(source_dir)
 
         if not image_files:
             return PackResult(

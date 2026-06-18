@@ -214,8 +214,11 @@ class JMConfigManager:
 
         # 构建配置字典
         option_dict = {
-            # 使用 Aid（本子ID）作为目录名，避免标题中的特殊字符或过长导致问题
-            "dir_rule": {"base_dir": str(self.download_dir), "rule": "Bd/Aid"},
+            # 目录规则 Bd/Aid/Pindex：基目录 / 本子ID / 章节序号。
+            # 用 Aid 作目录名避免标题特殊字符或过长导致的文件系统问题；必须再带上
+            # 章节维度 Pindex，否则多章节本子的各章都会写入同一目录、以相同页码
+            # 文件名（00001/00002...）互相覆盖，导致下载/打包不全。
+            "dir_rule": {"base_dir": str(self.download_dir), "rule": "Bd/Aid/Pindex"},
             "download": {
                 "image": {"suffix": self.image_suffix},
                 "threading": {

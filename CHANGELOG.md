@@ -2,6 +2,26 @@
 
 所有版本更新记录。
 
+## **v2.7.2** (2026-06-18)
+
+### Bug 修复
+- **修复 `client_type=html` 时 `/jmfav` 查看收藏失败**
+  - HTML 客户端的 `favorite_folder` 需要 `username` 来拼接 `/user/<name>/favorite/albums`，而插件每次新建的 client 不带 `_username`，导致抛“favorite_folder方法需要传username参数”
+  - 现在把当前登录用户名透传给 `favorite_folder`（API 端忽略该参数、HTML 端使用），默认 api 模式不受影响
+
+### 新增功能
+- **取消收藏** - 新增 `/jmfav del <本子ID>`
+  - `add`/`del` 共用幂等逻辑：先用本子详情的 `is_favorite` 判断当前状态，仅当与目标不一致时才切换，避免 toggle 接口被反向操作
+
+### 改进
+- **配额模块清理** - 移除无调用方的 `check_quota`/`consume_quota`/`get_remaining`（已由 `reserve`/`refund` 取代）；插件初始化时调用 `cleanup_old_data()`，避免 `quota.db` 随时间无限增长
+
+### 文档
+- 帮助信息与收藏提示补充 `/jmfav del` 用法
+- 更新版本号与更新时间
+
+---
+
 ## **v2.7.1** (2026-06-18)
 
 ### Bug 修复

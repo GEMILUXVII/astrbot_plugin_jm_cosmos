@@ -207,6 +207,15 @@ async def send_with_recall(
         is_timeout = "Timeout" in error_str or "timeout" in error_str.lower()
         temp_files = []
 
+        # NapCat/NTQQ 的 sendMsg 超时常伴随 EventRet result:0：底层其实已经发出，
+        # 只是客户端没在超时窗口内收到回执。此时重发只会产生重复消息（封面/文件被
+        # 发两三次）并拖慢流程，故视为已送达、直接返回，不再压缩/纯文字重试。
+        if is_timeout and '"result":0' in error_str.replace(" ", "").replace("\n", ""):
+            logger.warning(
+                "发送疑似超时但底层已送达 (result:0)，按已发送处理，跳过重试以避免重复"
+            )
+            return
+
         if is_timeout:
             logger.warning(f"发送超时，尝试压缩图片后重试: {e}")
 

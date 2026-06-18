@@ -32,7 +32,7 @@ PLUGIN_NAME = "jm_cosmos2"
     "jm_cosmos2",
     "GEMILUXVII",
     "JM漫画下载插件 - 支持搜索、下载禁漫天堂的漫画本子，支持加密PDF/ZIP打包",
-    "2.7.5",
+    "2.7.6",
     "https://github.com/GEMILUXVII/astrbot_plugin_jm_cosmos",
 )
 class JMCosmosPlugin(Star):
@@ -89,9 +89,7 @@ class JMCosmosPlugin(Star):
         self._subscription_task = None
         if self.config_manager.subscribe_check_interval > 0:
             try:
-                self._subscription_task = asyncio.create_task(
-                    self._subscription_loop()
-                )
+                self._subscription_task = asyncio.create_task(self._subscription_loop())
             except RuntimeError:
                 logger.warning("无法启动订阅后台任务：当前没有运行中的事件循环")
         else:

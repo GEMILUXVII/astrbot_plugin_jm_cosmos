@@ -135,9 +135,7 @@ class JMBrowser(JMClientMixin):
             "update_date": str(album.update_date)
             if hasattr(album, "update_date")
             else "",
-            "description": album.description
-            if hasattr(album, "description")
-            else "",
+            "description": album.description if hasattr(album, "description") else "",
             "likes": album.likes if hasattr(album, "likes") else 0,
             "views": album.views if hasattr(album, "views") else 0,
         }
@@ -249,7 +247,9 @@ class JMBrowser(JMClientMixin):
 
     # ==================== 排行榜功能 ====================
 
-    async def get_week_ranking(self, page: int = 1, category: str = "all") -> list[dict]:
+    async def get_week_ranking(
+        self, page: int = 1, category: str = "all"
+    ) -> list[dict]:
         """
         获取周排行榜
 

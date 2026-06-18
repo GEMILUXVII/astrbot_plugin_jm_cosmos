@@ -241,7 +241,9 @@ class JMDownloadManager(JMClientMixin):
             all_success = _resolve_all_success(downloader, skip_photos)
 
             # API 端 album.page_count 恒为 0，改用下载器实际累计的图片数作为图片总数
-            image_count = getattr(downloader, "downloaded_images", 0) or album.page_count
+            image_count = (
+                getattr(downloader, "downloaded_images", 0) or album.page_count
+            )
 
             return DownloadResult(
                 success=True,

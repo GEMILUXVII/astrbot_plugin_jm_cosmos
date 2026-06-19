@@ -11,6 +11,7 @@ import astrbot.api.message_components as Comp
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, StarTools, register
+from .core import start_http_server
 
 from .core import (
     DownloadQuotaManager,
@@ -40,13 +41,16 @@ class JMCosmosPlugin(Star):
 
     def __init__(self, context: Context, config: AstrBotConfig = None):
         super().__init__(context)
-        self.config = config
+        self.config = config or {}
 
         logger.info("正在初始化 JM-Cosmos II 插件...")
 
         # 获取数据目录
         try:
-            self.data_dir = StarTools.get_data_dir(PLUGIN_NAME)
+            if hasattr(StarTools, "get_plugin_data_dir"):
+                self.data_dir = context.get_plugin_data_dir()
+            else:
+                self.data_dir = StarTools.get_data_dir(PLUGIN_NAME)
             self.data_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"JM-Cosmos II 数据目录: {self.data_dir}")
         except Exception as e:
@@ -68,6 +72,18 @@ class JMCosmosPlugin(Star):
 
         # 初始化下载配额管理器
         self.quota_manager = DownloadQuotaManager(self.data_dir / "quota.db")
+        
+        # 获取http服务主机和端口
+        self.config = config or {}
+        http_config = config.get("http_server", {})
+        port = http_config.get("port", 8639)
+        host = http_config.get("host", "0.0.0.0") #考虑到是Windows虚拟机，所以需要监听所有地址防止遗漏
+
+        # 启动HTTP服务
+        if http_config.get("enabled", True):
+            start_http_server(self.data_dir / "downloads", port=port, host=host)
+            logger.info(f"JM-Cosmos II HTTP服务已启动，监听 {host}:{port}，共享目录: {self.data_dir}")
+
         # 顺手清理过期配额数据，避免 quota.db 随时间无限增长
         try:
             self.quota_manager.cleanup_old_data()
@@ -316,9 +332,19 @@ class JMCosmosPlugin(Star):
                 and pack_result.output_path
                 and pack_result.format != "none"
             ):
-                # 构建文件路径 - 调试输出
+                download_dir = self.data_dir / "downloads"
                 file_path_str = str(pack_result.output_path)
-                logger.info(f"准备发送文件: {file_path_str}")
+                logger.warning(f"准备发送文件: {file_path_str}")
+
+                relative = pack_result.output_path.relative_to(download_dir)
+                url_path = relative.as_posix()  # 转换为 URL 路径
+                # 读取主机和端口
+                config = self.config or {}
+                http_config = config.get("http_server", {})
+                host = http_config.get("host", "10.211.55.2") #默认值为Windows虚拟机里显示的宿主机地址
+                port = http_config.get("port", 8639)
+                file_url = f"http://{host}:{port}/{url_path}"  # 构建 URL
+                logger.warning(f"转换后文件路径: {file_url}")
 
                 # 构建消息链
                 from astrbot.api.event import MessageChain
@@ -328,11 +354,10 @@ class JMCosmosPlugin(Star):
                         Comp.Plain(result_msg),
                         Comp.File(
                             name=pack_result.output_path.name,
-                            file=file_path_str,
+                            url=file_url,
                         ),
                     ]
                 )
-
                 # 根据配置决定是否使用自动撤回
                 if self.config_manager.auto_recall_enabled:
                     await send_with_recall(
@@ -1334,6 +1359,9 @@ class JMCosmosPlugin(Star):
     async def terminate(self) -> None:
         """插件卸载时取消后台任务"""
         task = getattr(self, "_subscription_task", None)
+        """插件卸载时的清理工作"""
+        from .core import stop_http_server
+        stop_http_server()
         if task is not None and not task.done():
             task.cancel()
             try:

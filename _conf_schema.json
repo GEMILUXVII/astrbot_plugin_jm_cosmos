@@ -5,6 +5,7 @@
     "hint": "下载的漫画将保存到此目录，可使用相对路径或绝对路径",
     "default": "./downloads"
   },
+  
   "image_suffix": {
     "type": "string",
     "description": "图片格式",

@@ -6,6 +6,7 @@ JM-Cosmos II - AstrBot JM漫画下载插件
 
 import asyncio
 from pathlib import Path
+from urllib.parse import quote
 
 import astrbot.api.message_components as Comp
 from astrbot.api import AstrBotConfig, logger
@@ -18,6 +19,7 @@ from .core import (
     JMBrowser,
     JMConfigManager,
     JMDownloadManager,
+    JMHTTPFileServer,
     JMPacker,
     SubscriptionManager,
     classify_exception,
@@ -40,7 +42,7 @@ class JMCosmosPlugin(Star):
 
     def __init__(self, context: Context, config: AstrBotConfig = None):
         super().__init__(context)
-        self.config = config
+        self.config = config or {}
 
         logger.info("正在初始化 JM-Cosmos II 插件...")
 
@@ -55,7 +57,9 @@ class JMCosmosPlugin(Star):
             self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # 初始化配置管理器
-        self.config_manager = JMConfigManager(config, self.data_dir)
+        self.config_manager = JMConfigManager(self.config, self.data_dir)
+        self._http_file_server = JMHTTPFileServer()
+        self._start_http_file_server()
 
         # 初始化下载管理器
         self.download_manager = JMDownloadManager(self.config_manager)
@@ -96,6 +100,63 @@ class JMCosmosPlugin(Star):
             logger.info("订阅后台检查已关闭 (subscribe_check_interval=0)")
 
         logger.info("JM-Cosmos II 插件初始化完成")
+
+    def _start_http_file_server(self) -> None:
+        if not self.config_manager.http_file_server_enabled:
+            return
+
+        try:
+            self._http_file_server.start(
+                self.config_manager.download_dir,
+                self.config_manager.http_file_server_bind_host,
+                self.config_manager.http_file_server_port,
+            )
+        except Exception as e:
+            logger.warning(f"启动 HTTP 文件服务失败，将继续使用本地文件路径发送: {e}")
+
+    def _http_file_public_host(self) -> str:
+        host = self.config_manager.http_file_server_public_host.strip()
+        if host in {"", "0.0.0.0", "::"}:
+            logger.warning(
+                "HTTP 文件服务 public_host 未配置为可访问地址，"
+                "将使用 127.0.0.1 构造文件 URL"
+            )
+            return "127.0.0.1"
+        if ":" in host and not host.startswith("["):
+            return f"[{host}]"
+        return host
+
+    def _build_http_file_url(self, file_path: Path) -> str | None:
+        if (
+            not self.config_manager.http_file_server_enabled
+            or not self._http_file_server.running
+        ):
+            return None
+
+        root = self._http_file_server.directory or self.config_manager.download_dir
+        try:
+            relative = file_path.resolve().relative_to(root.resolve())
+        except ValueError:
+            logger.warning(
+                f"文件不在 HTTP 文件服务目录内，回退到本地路径发送: {file_path}"
+            )
+            return None
+
+        encoded_path = quote(relative.as_posix(), safe="/")
+        return (
+            f"http://{self._http_file_public_host()}:"
+            f"{self.config_manager.http_file_server_port}/{encoded_path}"
+        )
+
+    def _build_file_component(self, file_path: Path) -> Comp.File:
+        file_url = self._build_http_file_url(file_path)
+        if file_url:
+            logger.info(f"准备通过 HTTP URL 发送文件: {file_url}")
+            return Comp.File(name=file_path.name, url=file_url)
+
+        file_path_str = str(file_path)
+        logger.info(f"准备发送本地文件: {file_path_str}")
+        return Comp.File(name=file_path.name, file=file_path_str)
 
     def _enable_jmcomic_debug_dump(self) -> None:
         """调试模式下让 jmcomic 在 HTML 正则解析失败时把网页转储到文件，便于排查。
@@ -309,46 +370,8 @@ class JMCosmosPlugin(Star):
                 output_name=output_name,
             )
 
-            result_msg = MessageFormatter.format_download_result(result, pack_result)
-
-            if (
-                pack_result.success
-                and pack_result.output_path
-                and pack_result.format != "none"
-            ):
-                # 构建文件路径 - 调试输出
-                file_path_str = str(pack_result.output_path)
-                logger.info(f"准备发送文件: {file_path_str}")
-
-                # 构建消息链
-                from astrbot.api.event import MessageChain
-
-                file_chain = MessageChain(
-                    [
-                        Comp.Plain(result_msg),
-                        Comp.File(
-                            name=pack_result.output_path.name,
-                            file=file_path_str,
-                        ),
-                    ]
-                )
-
-                # 根据配置决定是否使用自动撤回
-                if self.config_manager.auto_recall_enabled:
-                    await send_with_recall(
-                        event,
-                        file_chain,
-                        self.config_manager.auto_recall_delay,
-                    )
-                else:
-                    yield event.chain_result(file_chain.chain)
-
-                # 自动清理
-                if self.config_manager.auto_delete_after_send:
-                    JMPacker.cleanup(result.save_path)
-                    JMPacker.cleanup(pack_result.output_path)
-            else:
-                yield event.plain_result(result_msg)
+            async for msg in self._emit_packed_file(event, result, pack_result):
+                yield msg
 
         except Exception as e:
             logger.error(f"下载本子失败: {e}")
@@ -466,44 +489,8 @@ class JMCosmosPlugin(Star):
                 output_name=output_name,
             )
 
-            result_msg = MessageFormatter.format_download_result(result, pack_result)
-
-            if (
-                pack_result.success
-                and pack_result.output_path
-                and pack_result.format != "none"
-            ):
-                file_path_str = str(pack_result.output_path)
-                logger.info(f"准备发送章节文件: {file_path_str}")
-
-                # 构建消息链
-                from astrbot.api.event import MessageChain
-
-                file_chain = MessageChain(
-                    [
-                        Comp.Plain(result_msg),
-                        Comp.File(
-                            name=pack_result.output_path.name,
-                            file=file_path_str,
-                        ),
-                    ]
-                )
-
-                # 根据配置决定是否使用自动撤回
-                if self.config_manager.auto_recall_enabled:
-                    await send_with_recall(
-                        event,
-                        file_chain,
-                        self.config_manager.auto_recall_delay,
-                    )
-                else:
-                    yield event.chain_result(file_chain.chain)
-
-                if self.config_manager.auto_delete_after_send:
-                    JMPacker.cleanup(result.save_path)
-                    JMPacker.cleanup(pack_result.output_path)
-            else:
-                yield event.plain_result(result_msg)
+            async for msg in self._emit_packed_file(event, result, pack_result):
+                yield msg
 
         except Exception as e:
             logger.error(f"下载章节失败: {e}")
@@ -1245,13 +1232,11 @@ class JMCosmosPlugin(Star):
         ):
             from astrbot.api.event import MessageChain
 
+            file_component = self._build_file_component(pack_result.output_path)
             file_chain = MessageChain(
                 [
                     Comp.Plain(result_msg),
-                    Comp.File(
-                        name=pack_result.output_path.name,
-                        file=str(pack_result.output_path),
-                    ),
+                    file_component,
                 ]
             )
 
@@ -1333,6 +1318,7 @@ class JMCosmosPlugin(Star):
 
     async def terminate(self) -> None:
         """插件卸载时取消后台任务"""
+        self._http_file_server.stop()
         task = getattr(self, "_subscription_task", None)
         if task is not None and not task.done():
             task.cancel()

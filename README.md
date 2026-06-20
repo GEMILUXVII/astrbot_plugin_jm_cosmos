@@ -311,6 +311,10 @@ pip install -r requirements.txt
 | `pack_password`          | 打包密码                   | 空             | **强烈建议设置，可降低风控** |
 | `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
 | `auto_delete_after_send` | 发送后自动删除             | `true`         |  |
+| `http_file_server_enabled` | HTTP文件发送模式         | `false`        | NapCat 在虚拟机/容器内无法访问本地路径时开启 |
+| `http_file_server_bind_host` | HTTP服务监听地址       | `0.0.0.0`      | 虚拟机/容器场景通常保持默认 |
+| `http_file_server_public_host` | HTTP文件访问主机     | `127.0.0.1`    | 填 NapCat 所在环境可访问的 AstrBot 宿主机 IP |
+| `http_file_server_port`  | HTTP文件服务端口           | `8639`         | 需确保端口未被占用且可访问 |
 | `send_cover_preview`     | 发送封面预览               | `true`         |  |
 | `show_download_progress` | 发送下载进度               | `true`         | 按 25% 步进推送，关闭可减少刷屏 |
 | `cover_recall_enabled`   | 封面消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
@@ -341,6 +345,7 @@ astrbot_plugin_jm_cosmos/
 │   ├── constants.py     # 常量定义
 │   ├── downloader.py    # 下载管理器（含进度与增量下载）
 │   ├── errors.py        # jmcomic 异常分类
+│   ├── http_server.py   # HTTP文件发送服务
 │   ├── jmcomic_loader.py # jmcomic 可选依赖加载
 │   ├── packer.py        # 打包模块 (ZIP/PDF/长图)
 │   ├── quota.py         # 下载配额管理器

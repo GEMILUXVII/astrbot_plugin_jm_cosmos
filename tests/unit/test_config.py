@@ -50,6 +50,13 @@ class TestConfigManagerDefaults:
         """测试自动删除默认启用"""
         assert config_manager.auto_delete_after_send is True
 
+    def test_http_file_server_defaults(self, config_manager):
+        """Test HTTP file server defaults."""
+        assert config_manager.http_file_server_enabled is False
+        assert config_manager.http_file_server_bind_host == "0.0.0.0"
+        assert config_manager.http_file_server_public_host == "127.0.0.1"
+        assert config_manager.http_file_server_port == 8639
+
     def test_send_cover_preview_default(self, config_manager):
         """测试封面预览默认启用"""
         assert config_manager.send_cover_preview is True
@@ -159,3 +166,37 @@ class TestCustomConfig:
         manager = JMConfigManager(config, data_dir)
         assert manager.use_proxy is True
         assert manager.proxy_url == "http://127.0.0.1:7890"
+
+    def test_http_file_server_configuration(self, data_dir):
+        """Test HTTP file server configuration."""
+        from core.base import JMConfigManager
+
+        config = {
+            "http_file_server_enabled": True,
+            "http_file_server_bind_host": "0.0.0.0",
+            "http_file_server_public_host": "10.211.55.2",
+            "http_file_server_port": 18639,
+        }
+        manager = JMConfigManager(config, data_dir)
+        assert manager.http_file_server_enabled is True
+        assert manager.http_file_server_bind_host == "0.0.0.0"
+        assert manager.http_file_server_public_host == "10.211.55.2"
+        assert manager.http_file_server_port == 18639
+
+    def test_legacy_http_server_configuration(self, data_dir):
+        """Test compatibility with PR-style HTTP server configuration."""
+        from core.base import JMConfigManager
+
+        config = {
+            "http_server": {
+                "enabled": True,
+                "host": "10.211.55.2",
+                "public_host": "vm-host.local",
+                "port": 18639,
+            }
+        }
+        manager = JMConfigManager(config, data_dir)
+        assert manager.http_file_server_enabled is True
+        assert manager.http_file_server_bind_host == "10.211.55.2"
+        assert manager.http_file_server_public_host == "vm-host.local"
+        assert manager.http_file_server_port == 18639

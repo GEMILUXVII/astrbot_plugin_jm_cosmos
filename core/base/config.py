@@ -104,6 +104,40 @@ class JMConfigManager:
         return self.plugin_config.get("auto_delete_after_send", True)
 
     @property
+    def _legacy_http_server_config(self) -> dict[str, Any]:
+        value = self.plugin_config.get("http_server", {})
+        if isinstance(value, dict):
+            return value
+        return {}
+
+    @property
+    def http_file_server_enabled(self) -> bool:
+        """Whether to expose packed files through a local HTTP server."""
+        fallback = self._legacy_http_server_config.get("enabled", False)
+        return self.plugin_config.get("http_file_server_enabled", fallback)
+
+    @property
+    def http_file_server_bind_host(self) -> str:
+        """Address used by the HTTP server for binding."""
+        fallback = self._legacy_http_server_config.get("host", "0.0.0.0")
+        return self.plugin_config.get("http_file_server_bind_host", fallback)
+
+    @property
+    def http_file_server_public_host(self) -> str:
+        """Host name or IP that the protocol adapter can reach."""
+        fallback = self._legacy_http_server_config.get(
+            "public_host",
+            self._legacy_http_server_config.get("host", "127.0.0.1"),
+        )
+        return self.plugin_config.get("http_file_server_public_host", fallback)
+
+    @property
+    def http_file_server_port(self) -> int:
+        """Port used by the HTTP file server."""
+        fallback = self._legacy_http_server_config.get("port", 8639)
+        return int(self.plugin_config.get("http_file_server_port", fallback) or 8639)
+
+    @property
     def send_cover_preview(self) -> bool:
         """是否发送封面预览"""
         return self.plugin_config.get("send_cover_preview", True)

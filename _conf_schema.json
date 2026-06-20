@@ -92,6 +92,30 @@
     "hint": "发送文件后是否自动删除本地文件以节省空间",
     "default": true
   },
+  "http_file_server_enabled": {
+    "type": "bool",
+    "description": "HTTP文件发送模式",
+    "hint": "开启后通过插件内置HTTP服务发送打包文件，适用于NapCat运行在虚拟机或容器内、无法访问AstrBot本地文件路径的场景",
+    "default": false
+  },
+  "http_file_server_bind_host": {
+    "type": "string",
+    "description": "HTTP服务监听地址",
+    "hint": "HTTP文件服务绑定地址。虚拟机/容器场景通常使用 0.0.0.0",
+    "default": "0.0.0.0"
+  },
+  "http_file_server_public_host": {
+    "type": "string",
+    "description": "HTTP文件访问主机",
+    "hint": "NapCat所在环境可访问到AstrBot宿主机的IP或域名，例如虚拟机网关地址 10.211.55.2",
+    "default": "127.0.0.1"
+  },
+  "http_file_server_port": {
+    "type": "int",
+    "description": "HTTP文件服务端口",
+    "hint": "内置HTTP文件服务监听端口，请确保未被占用且NapCat所在环境可访问",
+    "default": 8639
+  },
   "send_cover_preview": {
     "type": "bool",
     "description": "发送封面预览",

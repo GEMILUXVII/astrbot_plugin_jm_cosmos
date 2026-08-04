@@ -94,6 +94,14 @@ class JMConfigManager:
         return self.plugin_config.get("pack_password", "")
 
     @property
+    def pack_split_threshold(self) -> int:
+        """拆包体积阈值(字节)，0 表示不拆包"""
+        try:
+            return max(0, int(self.plugin_config.get("pack_split_threshold", 8388608)))
+        except (TypeError, ValueError):
+            return 8388608
+
+    @property
     def filename_show_password(self) -> bool:
         """是否在文件名中显示密码提示"""
         return self.plugin_config.get("filename_show_password", False)

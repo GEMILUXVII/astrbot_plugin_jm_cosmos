@@ -307,6 +307,7 @@ class JMCosmosPlugin(Star):
             pack_result = packer.pack(
                 source_dir=result.save_path,
                 output_name=output_name,
+                max_part_size=self.config_manager.pack_split_threshold,
             )
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
@@ -316,37 +317,10 @@ class JMCosmosPlugin(Star):
                 and pack_result.output_path
                 and pack_result.format != "none"
             ):
-                # 构建文件路径 - 调试输出
-                file_path_str = str(pack_result.output_path)
-                logger.info(f"准备发送文件: {file_path_str}")
-
-                # 构建消息链
-                from astrbot.api.event import MessageChain
-
-                file_chain = MessageChain(
-                    [
-                        Comp.Plain(result_msg),
-                        Comp.File(
-                            name=pack_result.output_path.name,
-                            file=file_path_str,
-                        ),
-                    ]
-                )
-
-                # 根据配置决定是否使用自动撤回
-                if self.config_manager.auto_recall_enabled:
-                    await send_with_recall(
-                        event,
-                        file_chain,
-                        self.config_manager.auto_recall_delay,
-                    )
-                else:
-                    yield event.chain_result(file_chain.chain)
-
-                # 自动清理
-                if self.config_manager.auto_delete_after_send:
-                    JMPacker.cleanup(result.save_path)
-                    JMPacker.cleanup(pack_result.output_path)
+                async for msg in self._emit_packed_file(
+                    event, result, pack_result, label="文件"
+                ):
+                    yield msg
             else:
                 yield event.plain_result(result_msg)
 
@@ -464,6 +438,7 @@ class JMCosmosPlugin(Star):
             pack_result = packer.pack(
                 source_dir=result.save_path,
                 output_name=output_name,
+                max_part_size=self.config_manager.pack_split_threshold,
             )
 
             result_msg = MessageFormatter.format_download_result(result, pack_result)
@@ -473,35 +448,10 @@ class JMCosmosPlugin(Star):
                 and pack_result.output_path
                 and pack_result.format != "none"
             ):
-                file_path_str = str(pack_result.output_path)
-                logger.info(f"准备发送章节文件: {file_path_str}")
-
-                # 构建消息链
-                from astrbot.api.event import MessageChain
-
-                file_chain = MessageChain(
-                    [
-                        Comp.Plain(result_msg),
-                        Comp.File(
-                            name=pack_result.output_path.name,
-                            file=file_path_str,
-                        ),
-                    ]
-                )
-
-                # 根据配置决定是否使用自动撤回
-                if self.config_manager.auto_recall_enabled:
-                    await send_with_recall(
-                        event,
-                        file_chain,
-                        self.config_manager.auto_recall_delay,
-                    )
-                else:
-                    yield event.chain_result(file_chain.chain)
-
-                if self.config_manager.auto_delete_after_send:
-                    JMPacker.cleanup(result.save_path)
-                    JMPacker.cleanup(pack_result.output_path)
+                async for msg in self._emit_packed_file(
+                    event, result, pack_result, label="章节文件"
+                ):
+                    yield msg
             else:
                 yield event.plain_result(result_msg)
 
@@ -1216,7 +1166,9 @@ class JMCosmosPlugin(Star):
                 password=self.config_manager.pack_password,
             )
             pack_result = packer.pack(
-                source_dir=result.save_path, output_name=output_name
+                source_dir=result.save_path,
+                output_name=output_name,
+                max_part_size=self.config_manager.pack_split_threshold,
             )
 
             # 同步更新订阅记录的已知章节数
@@ -1234,8 +1186,10 @@ class JMCosmosPlugin(Star):
             if not download_succeeded:
                 self._refund_quota(event, quota_reserved)
 
-    async def _emit_packed_file(self, event: AstrMessageEvent, result, pack_result):
-        """统一处理打包文件的发送（含自动撤回与清理），供下载类命令复用"""
+    async def _emit_packed_file(
+        self, event: AstrMessageEvent, result, pack_result, label: str = "文件"
+    ):
+        """统一处理打包文件的发送（含自动撤回与清理），供下载类命令复用。"""
         result_msg = MessageFormatter.format_download_result(result, pack_result)
 
         if (
@@ -1245,26 +1199,51 @@ class JMCosmosPlugin(Star):
         ):
             from astrbot.api.event import MessageChain
 
-            file_chain = MessageChain(
-                [
-                    Comp.Plain(result_msg),
-                    Comp.File(
-                        name=pack_result.output_path.name,
-                        file=str(pack_result.output_path),
-                    ),
-                ]
-            )
+            
+            yield event.plain_result(result_msg)
 
-            if self.config_manager.auto_recall_enabled:
-                await send_with_recall(
-                    event, file_chain, self.config_manager.auto_recall_delay
+            # 拆包时取全部分片，否则单文件
+            parts = pack_result.parts or [pack_result.output_path]
+            total = len(parts)
+            for idx, part_path in enumerate(parts, 1):
+                # 多分片时每个文件带分片序号提示；单文件时不再附带文字
+                part_text = (
+                    f"📦 分片 {idx}/{total}" if total > 1 else None
                 )
-            else:
-                yield event.chain_result(file_chain.chain)
+
+                logger.info(f"准备发送{label}: {part_path}")
+
+                if part_text:
+                    file_chain = MessageChain(
+                        [
+                            Comp.Plain(part_text),
+                            Comp.File(
+                                name=part_path.name,
+                                file=str(part_path),
+                            ),
+                        ]
+                    )
+                else:
+                    file_chain = MessageChain(
+                        [
+                            Comp.File(
+                                name=part_path.name,
+                                file=str(part_path),
+                            ),
+                        ]
+                    )
+
+                if self.config_manager.auto_recall_enabled:
+                    await send_with_recall(
+                        event, file_chain, self.config_manager.auto_recall_delay
+                    )
+                else:
+                    yield event.chain_result(file_chain.chain)
 
             if self.config_manager.auto_delete_after_send:
                 JMPacker.cleanup(result.save_path)
-                JMPacker.cleanup(pack_result.output_path)
+                for part_path in parts:
+                    JMPacker.cleanup(part_path)
         else:
             yield event.plain_result(result_msg)
 

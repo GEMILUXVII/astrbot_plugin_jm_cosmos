@@ -71,6 +71,8 @@ class PackResult:
     format: str
     encrypted: bool
     error_message: str | None = None
+    # 拆包时的全部分片路径；非空时 output_path 指向第一个分片
+    parts: list[Path] | None = None
 
 
 class JMPacker:
@@ -88,7 +90,11 @@ class JMPacker:
         self.password = password
 
     def pack(
-        self, source_dir: Path, output_name: str, output_dir: Path | None = None
+        self,
+        source_dir: Path,
+        output_name: str,
+        output_dir: Path | None = None,
+        max_part_size: int = 0,
     ) -> PackResult:
         """
         打包目录
@@ -97,6 +103,8 @@ class JMPacker:
             source_dir: 源目录
             output_name: 输出文件名（不含扩展名）
             output_dir: 输出目录，默认为源目录的父目录
+            max_part_size: 单个分片最大字节数，>0 时产物超限自动拆包
+                （对 zip/pdf/long_img 生效）
 
         Returns:
             PackResult 打包结果
@@ -116,11 +124,17 @@ class JMPacker:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if self.pack_format == "zip":
-            return self._pack_zip(source_dir, output_name, output_dir)
+            return self._pack_or_split(
+                self._pack_zip, source_dir, output_name, output_dir, max_part_size
+            )
         elif self.pack_format == "pdf":
-            return self._pack_pdf(source_dir, output_name, output_dir)
+            return self._pack_or_split(
+                self._pack_pdf, source_dir, output_name, output_dir, max_part_size
+            )
         elif self.pack_format == "long_img":
-            return self._pack_long_img(source_dir, output_name, output_dir)
+            return self._pack_or_split(
+                self._pack_long_img, source_dir, output_name, output_dir, max_part_size
+            )
         elif self.pack_format == "none":
             return PackResult(
                 success=True, output_path=source_dir, format="none", encrypted=False
@@ -133,6 +147,109 @@ class JMPacker:
                 encrypted=False,
                 error_message=f"不支持的打包格式: {self.pack_format}",
             )
+
+    def _pack_or_split(
+        self,
+        pack_one,
+        source_dir: Path,
+        output_name: str,
+        output_dir: Path,
+        max_part_size: int,
+    ) -> PackResult:
+        """先尝试整体打包；若产物超阈值则按图片分组拆成多个分片。
+
+        Args:
+            pack_one: 形如 (source_dir, output_name, output_dir) -> PackResult 的
+                单包打包方法（_pack_zip / _pack_pdf / _pack_long_img）。
+        """
+        result = pack_one(source_dir, output_name, output_dir)
+        # 不拆包 / 拆包关闭 / 打包失败 / 产物未超限：原样返回
+        if (
+            max_part_size <= 0
+            or not result.success
+            or not result.output_path
+            or result.output_path.stat().st_size <= max_part_size
+        ):
+            return result
+
+        # 整体产物超限：清理后改为分组打包
+        self.cleanup(result.output_path)
+        return self._pack_split(pack_one, source_dir, output_name, output_dir, max_part_size)
+
+    def _pack_split(
+        self,
+        pack_one,
+        source_dir: Path,
+        output_name: str,
+        output_dir: Path,
+        max_part_size: int,
+    ) -> PackResult:
+        
+        import tempfile
+
+        image_files = _collect_images_sorted(source_dir)
+        if not image_files:
+            return PackResult(
+                success=False,
+                output_path=None,
+                format=self.pack_format,
+                encrypted=bool(self.password),
+                error_message="未找到图片文件，无法拆包",
+            )
+
+        groups = self._partition_by_size(image_files, max_part_size)
+        parts: list[Path] = []
+        total = len(groups)
+        for idx, group in enumerate(groups, 1):
+            chunk_dir = Path(tempfile.mkdtemp(prefix="jm_split_"))
+            try:
+                for src in group:
+                    # 保持原相对路径结构（章节/页码），避免重名覆盖
+                    rel = src.relative_to(source_dir)
+                    dst = chunk_dir / rel
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+
+                suffix = "" if total == 1 else f"_part{idx}"
+                r = pack_one(chunk_dir, f"{output_name}{suffix}", output_dir)
+                if not r.success or not r.output_path:
+                    # 任一分片失败则整体失败，清理已产出
+                    for p in parts:
+                        self.cleanup(p)
+                    return r
+                parts.append(r.output_path)
+            finally:
+                self.cleanup(chunk_dir)
+
+        return PackResult(
+            success=True,
+            output_path=parts[0],
+            format=self.pack_format,
+            encrypted=bool(self.password),
+            parts=parts,
+        )
+
+    @staticmethod
+    def _partition_by_size(
+        files: list[Path], max_size: int
+    ) -> list[list[Path]]:
+        """按未压缩体积累加分组，每组 ≤ max_size。单文件超限时单独成组。"""
+        groups: list[list[Path]] = []
+        cur: list[Path] = []
+        cur_size = 0
+        for f in files:
+            try:
+                size = f.stat().st_size
+            except OSError:
+                size = 0
+            if cur and cur_size + size > max_size:
+                groups.append(cur)
+                cur, cur_size = [], 0
+            cur.append(f)
+            cur_size += size
+        if cur:
+            groups.append(cur)
+        return groups
 
     def _pack_zip(
         self, source_dir: Path, output_name: str, output_dir: Path

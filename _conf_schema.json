@@ -80,6 +80,12 @@
     "hint": "为ZIP或PDF设置密码，留空则不加密",
     "default": ""
   },
+  "pack_split_threshold": {
+    "type": "int",
+    "description": "拆包体积阈值(字节)",
+    "hint": "打包产物超过此大小时自动拆分为多个分片逐个发送，主要规避QQ官方机器人API的413限制。0=关闭拆包。默认8388608(8MB)。NapCat平台可填0关闭",
+    "default": 8388608
+  },
   "filename_show_password": {
     "type": "bool",
     "description": "文件名显示密码",

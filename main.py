@@ -1199,31 +1199,39 @@ class JMCosmosPlugin(Star):
         ):
             from astrbot.api.event import MessageChain
 
+            
+            yield event.plain_result(result_msg)
+
             # 拆包时取全部分片，否则单文件
             parts = pack_result.parts or [pack_result.output_path]
             total = len(parts)
             for idx, part_path in enumerate(parts, 1):
-                # 第一片附带结果说明文字，后续片只带分片序号提示
-                if total > 1:
-                    part_text = (
-                        f"{result_msg}\n📦 分片 {idx}/{total}"
-                        if idx == 1
-                        else f"📦 分片 {idx}/{total}"
-                    )
-                else:
-                    part_text = result_msg
+                # 多分片时每个文件带分片序号提示；单文件时不再附带文字
+                part_text = (
+                    f"📦 分片 {idx}/{total}" if total > 1 else None
+                )
 
                 logger.info(f"准备发送{label}: {part_path}")
 
-                file_chain = MessageChain(
-                    [
-                        Comp.Plain(part_text),
-                        Comp.File(
-                            name=part_path.name,
-                            file=str(part_path),
-                        ),
-                    ]
-                )
+                if part_text:
+                    file_chain = MessageChain(
+                        [
+                            Comp.Plain(part_text),
+                            Comp.File(
+                                name=part_path.name,
+                                file=str(part_path),
+                            ),
+                        ]
+                    )
+                else:
+                    file_chain = MessageChain(
+                        [
+                            Comp.File(
+                                name=part_path.name,
+                                file=str(part_path),
+                            ),
+                        ]
+                    )
 
                 if self.config_manager.auto_recall_enabled:
                     await send_with_recall(

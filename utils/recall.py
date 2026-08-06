@@ -66,20 +66,21 @@ def _compress_image(image_path: str, quality: int = 60) -> str | None:
 
 def _get_text_only_chain(message_chain: MessageChain) -> MessageChain | None:
     """
-    从消息链中提取纯文字内容（移除图片）
+    Extract plain text without retrying files or other media.
+
+    Args:
+        message_chain: Original message chain.
 
     Returns:
-        纯文字消息链，如果没有文字返回 None
+        A text-only message chain, or ``None`` when no text is present.
     """
     text_components = []
 
     for comp in message_chain.chain:
-        # 跳过图片
-        if isinstance(comp, Comp.Image):
-            continue
-        if isinstance(comp, dict) and comp.get("type") == "image":
-            continue
-        text_components.append(comp)
+        if isinstance(comp, Comp.Plain):
+            text_components.append(comp)
+        elif isinstance(comp, dict) and comp.get("type") == "text":
+            text_components.append(comp)
 
     if text_components:
         return MessageChain(text_components)
@@ -134,7 +135,7 @@ async def send_with_recall(
     event: AstrMessageEvent,
     message_chain: MessageChain,
     delay: int = 60,
-) -> None:
+) -> bool:
     """
     发送消息并在指定时间后自动撤回
 
@@ -142,6 +143,10 @@ async def send_with_recall(
         event: AstrBot消息事件
         message_chain: 要发送的消息链
         delay: 撤回延迟（秒），默认60秒
+
+    Returns:
+        ``True`` when the message was delivered or was reported as delivered.
+        ``False`` when both the specialized and fallback sends failed.
 
     Note:
         仅支持 aiocqhttp 平台（QQ/NapCat/Lagrange）
@@ -152,7 +157,7 @@ async def send_with_recall(
     if event.get_platform_name() != "aiocqhttp":
         # 其他平台回退到普通发送
         await event.send(message_chain)
-        return
+        return True
 
     # 导入平台特定的类
     try:
@@ -162,12 +167,12 @@ async def send_with_recall(
     except ImportError:
         # 导入失败时回退到普通发送
         await event.send(message_chain)
-        return
+        return True
 
     # 获取 bot 实例
     if not hasattr(event, "bot"):
         await event.send(message_chain)
-        return
+        return True
 
     bot = event.bot
     is_group = bool(event.get_group_id())
@@ -176,7 +181,7 @@ async def send_with_recall(
     # 确保 session_id 是数字
     if not session_id_str or not str(session_id_str).isdigit():
         await event.send(message_chain)
-        return
+        return True
 
     session_id = int(session_id_str)
 
@@ -201,6 +206,7 @@ async def send_with_recall(
             # 创建后台任务延迟撤回
             asyncio.create_task(_delayed_recall(bot, message_id, delay))
             logger.debug(f"已安排消息 {message_id} 在 {delay} 秒后撤回")
+        return True
 
     except Exception as e:
         error_str = str(e)
@@ -214,7 +220,7 @@ async def send_with_recall(
             logger.warning(
                 "发送疑似超时但底层已送达 (result:0)，按已发送处理，跳过重试以避免重复"
             )
-            return
+            return True
 
         if is_timeout:
             logger.warning(f"发送超时，尝试压缩图片后重试: {e}")
@@ -234,7 +240,7 @@ async def send_with_recall(
                             f"压缩后发送成功，已安排消息 {message_id} 在 {delay} 秒后撤回"
                         )
                     _cleanup_temp_files(temp_files)
-                    return
+                    return True
                 except Exception as retry_e:
                     logger.warning(f"压缩后发送仍失败: {retry_e}")
                     _cleanup_temp_files(temp_files)
@@ -251,7 +257,7 @@ async def send_with_recall(
                     if message_id and delay > 0:
                         asyncio.create_task(_delayed_recall(bot, message_id, delay))
                     logger.info("图片发送失败，已发送纯文字信息")
-                    return
+                    return True
                 except Exception as text_e:
                     logger.warning(f"纯文字发送也失败: {text_e}")
 
@@ -259,9 +265,11 @@ async def send_with_recall(
         logger.warning(f"send_with_recall 发送失败，回退到普通发送: {e}")
         try:
             await event.send(message_chain)
+            return True
         except Exception as fallback_e:
             # 回退发送也失败，记录警告但不中断流程
             logger.warning(f"回退发送也失败，跳过此消息: {fallback_e}")
+            return False
 
 
 async def _delayed_recall(bot, message_id: int, delay: int) -> None:

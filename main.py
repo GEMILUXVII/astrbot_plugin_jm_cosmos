@@ -6,7 +6,6 @@ JM-Cosmos II - AstrBot JM漫画下载插件
 
 import asyncio
 from pathlib import Path
-from urllib.parse import quote
 
 import astrbot.api.message_components as Comp
 from astrbot.api import AstrBotConfig, logger
@@ -102,6 +101,7 @@ class JMCosmosPlugin(Star):
         logger.info("JM-Cosmos II 插件初始化完成")
 
     def _start_http_file_server(self) -> None:
+        """Start HTTP delivery when the isolated-adapter mode is enabled."""
         if not self.config_manager.http_file_server_enabled:
             return
 
@@ -112,51 +112,80 @@ class JMCosmosPlugin(Star):
                 self.config_manager.http_file_server_port,
             )
         except Exception as e:
-            logger.warning(f"启动 HTTP 文件服务失败，将继续使用本地文件路径发送: {e}")
+            logger.warning(
+                f"Failed to start HTTP file delivery; local paths will be used: {e}"
+            )
 
     def _http_file_public_host(self) -> str:
-        host = self.config_manager.http_file_server_public_host.strip()
+        """Return a URL-safe host reachable by the protocol adapter.
+
+        Returns:
+            A host name, IPv4 address, or bracketed IPv6 address.
+
+        Raises:
+            ValueError: If the configured value contains a URL scheme or path.
+        """
+        host = self.config_manager.http_file_server_public_host
+        if "://" in host or "/" in host:
+            raise ValueError("public host must not include a URL scheme or path")
         if host in {"", "0.0.0.0", "::"}:
             logger.warning(
-                "HTTP 文件服务 public_host 未配置为可访问地址，"
-                "将使用 127.0.0.1 构造文件 URL"
+                "HTTP file delivery public host is not reachable; using 127.0.0.1"
             )
             return "127.0.0.1"
         if ":" in host and not host.startswith("["):
             return f"[{host}]"
         return host
 
-    def _build_http_file_url(self, file_path: Path) -> str | None:
+    def _build_http_file_url(self, file_path: Path) -> tuple[str | None, str | None]:
+        """Register a file and build its temporary token URL.
+
+        Args:
+            file_path: Packed file to expose to the protocol adapter.
+
+        Returns:
+            A tuple containing the URL and revocation token. Both are ``None``
+            when HTTP delivery is unavailable.
+        """
         if (
             not self.config_manager.http_file_server_enabled
             or not self._http_file_server.running
         ):
-            return None
+            return None, None
 
-        root = self._http_file_server.directory or self.config_manager.download_dir
         try:
-            relative = file_path.resolve().relative_to(root.resolve())
-        except ValueError:
+            public_host = self._http_file_public_host()
+            port = self.config_manager.http_file_server_port
+            token = self._http_file_server.register_file(file_path)
+        except (RuntimeError, TypeError, ValueError) as exc:
             logger.warning(
-                f"文件不在 HTTP 文件服务目录内，回退到本地路径发送: {file_path}"
+                "Failed to register a file for HTTP delivery; using its local path: "
+                f"{file_path}: {exc}"
             )
-            return None
+            return None, None
 
-        encoded_path = quote(relative.as_posix(), safe="/")
         return (
-            f"http://{self._http_file_public_host()}:"
-            f"{self.config_manager.http_file_server_port}/{encoded_path}"
+            f"http://{public_host}:{port}/files/{token}",
+            token,
         )
 
-    def _build_file_component(self, file_path: Path) -> Comp.File:
-        file_url = self._build_http_file_url(file_path)
+    def _build_file_component(self, file_path: Path) -> tuple[Comp.File, str | None]:
+        """Build a file component and return its optional HTTP token.
+
+        Args:
+            file_path: Packed file to send.
+
+        Returns:
+            The file component and a token that must be revoked after sending.
+        """
+        file_url, token = self._build_http_file_url(file_path)
         if file_url:
-            logger.info(f"准备通过 HTTP URL 发送文件: {file_url}")
-            return Comp.File(name=file_path.name, url=file_url)
+            logger.info(f"Preparing file for tokenized HTTP delivery: {file_path.name}")
+            return Comp.File(name=file_path.name, url=file_url), token
 
         file_path_str = str(file_path)
-        logger.info(f"准备发送本地文件: {file_path_str}")
-        return Comp.File(name=file_path.name, file=file_path_str)
+        logger.info(f"Preparing local file delivery: {file_path_str}")
+        return Comp.File(name=file_path.name, file=file_path_str), None
 
     def _enable_jmcomic_debug_dump(self) -> None:
         """调试模式下让 jmcomic 在 HTML 正则解析失败时把网页转储到文件，便于排查。
@@ -1222,7 +1251,16 @@ class JMCosmosPlugin(Star):
                 self._refund_quota(event, quota_reserved)
 
     async def _emit_packed_file(self, event: AstrMessageEvent, result, pack_result):
-        """统一处理打包文件的发送（含自动撤回与清理），供下载类命令复用"""
+        """Send a packed file separately and clean it only after confirmed delivery.
+
+        Args:
+            event: Current AstrBot message event.
+            result: Download result used for status formatting and cleanup.
+            pack_result: Packer result containing the output file.
+
+        Yields:
+            Message results for the status text and any delivery error.
+        """
         result_msg = MessageFormatter.format_download_result(result, pack_result)
 
         if (
@@ -1232,20 +1270,47 @@ class JMCosmosPlugin(Star):
         ):
             from astrbot.api.event import MessageChain
 
-            file_component = self._build_file_component(pack_result.output_path)
-            file_chain = MessageChain(
-                [
-                    Comp.Plain(result_msg),
-                    file_component,
-                ]
-            )
+            yield event.plain_result(result_msg)
 
-            if self.config_manager.auto_recall_enabled:
-                await send_with_recall(
-                    event, file_chain, self.config_manager.auto_recall_delay
+            token = None
+            delivered = False
+            keep_token_until_expiry = False
+            try:
+                file_component, token = self._build_file_component(
+                    pack_result.output_path
                 )
-            else:
-                yield event.chain_result(file_chain.chain)
+                file_chain = MessageChain([file_component])
+                recall_delay = (
+                    self.config_manager.auto_recall_delay
+                    if self.config_manager.auto_recall_enabled
+                    else 0
+                )
+                delivered = await send_with_recall(event, file_chain, recall_delay)
+
+                if delivered and token:
+                    served = await asyncio.to_thread(
+                        self._http_file_server.wait_until_served,
+                        token,
+                        30,
+                    )
+                    if not served:
+                        delivered = False
+                        keep_token_until_expiry = True
+                        logger.warning(
+                            "HTTP file delivery was accepted but no completed GET "
+                            "was observed within 30 seconds"
+                        )
+            except Exception as exc:
+                logger.warning(f"Packed file delivery failed: {exc}")
+            finally:
+                if not keep_token_until_expiry:
+                    self._http_file_server.revoke_file(token)
+
+            if not delivered:
+                yield event.plain_result(
+                    "⚠️ 文件发送失败，本地文件已保留，请检查日志和网络配置后重试。"
+                )
+                return
 
             if self.config_manager.auto_delete_after_send:
                 JMPacker.cleanup(result.save_path)
@@ -1317,7 +1382,7 @@ class JMCosmosPlugin(Star):
             logger.warning(f"发送订阅更新通知失败: {e}")
 
     async def terminate(self) -> None:
-        """插件卸载时取消后台任务"""
+        """Stop HTTP delivery and cancel the subscription task on unload."""
         self._http_file_server.stop()
         task = getattr(self, "_subscription_task", None)
         if task is not None and not task.done():

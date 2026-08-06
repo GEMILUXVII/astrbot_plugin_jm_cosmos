@@ -4,6 +4,8 @@
 测试 core/base/config.py 中的 JMConfigManager 类。
 """
 
+import pytest
+
 
 class TestConfigManagerDefaults:
     """配置管理器默认值测试"""
@@ -183,20 +185,11 @@ class TestCustomConfig:
         assert manager.http_file_server_public_host == "10.211.55.2"
         assert manager.http_file_server_port == 18639
 
-    def test_legacy_http_server_configuration(self, data_dir):
-        """Test compatibility with PR-style HTTP server configuration."""
+    def test_http_file_server_rejects_invalid_port(self, data_dir):
+        """Test HTTP file server port validation."""
         from core.base import JMConfigManager
 
-        config = {
-            "http_server": {
-                "enabled": True,
-                "host": "10.211.55.2",
-                "public_host": "vm-host.local",
-                "port": 18639,
-            }
-        }
+        config = {"http_file_server_port": 70000}
         manager = JMConfigManager(config, data_dir)
-        assert manager.http_file_server_enabled is True
-        assert manager.http_file_server_bind_host == "10.211.55.2"
-        assert manager.http_file_server_public_host == "vm-host.local"
-        assert manager.http_file_server_port == 18639
+        with pytest.raises(ValueError, match="between 1 and 65535"):
+            _ = manager.http_file_server_port

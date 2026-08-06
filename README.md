@@ -311,7 +311,7 @@ pip install -r requirements.txt
 | `pack_password`          | 打包密码                   | 空             | **强烈建议设置，可降低风控** |
 | `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
 | `auto_delete_after_send` | 发送后自动删除             | `true`         |  |
-| `http_file_server_enabled` | HTTP文件发送模式         | `false`        | NapCat 在虚拟机/容器内无法访问本地路径时开启 |
+| `http_file_server_enabled` | HTTP文件发送模式         | `false`        | NapCat 在虚拟机/容器内无法访问本地路径时开启；仅通过临时随机令牌提供单文件访问 |
 | `http_file_server_bind_host` | HTTP服务监听地址       | `0.0.0.0`      | 虚拟机/容器场景通常保持默认 |
 | `http_file_server_public_host` | HTTP文件访问主机     | `127.0.0.1`    | 填 NapCat 所在环境可访问的 AstrBot 宿主机 IP |
 | `http_file_server_port`  | HTTP文件服务端口           | `8639`         | 需确保端口未被占用且可访问 |
@@ -390,7 +390,7 @@ proxy_url: http://127.0.0.1:7890
 ### Q: Docker 部署时文件发送失败？
 
 > [!IMPORTANT]
-> **AstrBot 和 NapCat 分离部署时，必须配置共享卷才能发送文件！**
+> AstrBot 和 NapCat 分离部署时，需要配置共享卷或启用 HTTP 文件发送模式。
 
 当 AstrBot 和 NapCat（或其他 OneBot 实现）部署在不同 Docker 容器中时，可能会遇到以下错误：
 
@@ -399,7 +399,7 @@ proxy_url: http://127.0.0.1:7890
 
 **原因**：两个容器的文件系统是隔离的，NapCat 无法访问 AstrBot 容器内的文件。
 
-**解决方案**：在 NapCat 的 `docker-compose.yml` 中添加 volume 映射，使其能访问 AstrBot 的数据目录：
+**方案一（推荐）**：在 NapCat 的 `docker-compose.yml` 中添加 volume 映射，使其能访问 AstrBot 的数据目录：
 
 ```yaml
     volumes:
@@ -414,6 +414,20 @@ proxy_url: http://127.0.0.1:7890
 
 > [!TIP]
 > 修改后需要重建容器：`docker-compose down && docker-compose up -d`
+
+**方案二**：无法共享目录时，在插件配置中启用以下选项：
+
+```yaml
+http_file_server_enabled: true
+http_file_server_bind_host: 0.0.0.0
+http_file_server_public_host: 192.168.1.10  # NapCat 可访问的 AstrBot 主机地址
+http_file_server_port: 8639
+```
+
+HTTP 模式同样适用于 NapCat 位于 VMware、Parallels Desktop 等虚拟机中的场景。服务只允许通过临时随机令牌访问当前发送的单个文件，未使用的令牌会在 5 分钟后失效。
+
+> [!WARNING]
+> 请通过防火墙将该端口限制在 NapCat 所在的虚拟机或容器网络内，不要直接暴露到公网。
 
 ### Q: 文件发送失败，提示 "rich media transfer failed"？
 

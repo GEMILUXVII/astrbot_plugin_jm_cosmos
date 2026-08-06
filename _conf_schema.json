@@ -95,7 +95,7 @@
   "http_file_server_enabled": {
     "type": "bool",
     "description": "HTTP文件发送模式",
-    "hint": "开启后通过插件内置HTTP服务发送打包文件，适用于NapCat运行在虚拟机或容器内、无法访问AstrBot本地文件路径的场景",
+    "hint": "开启后通过临时随机令牌提供单文件访问，适用于NapCat运行在虚拟机或容器内、无法访问AstrBot本地文件路径的场景。请勿将端口暴露到公网",
     "default": false
   },
   "http_file_server_bind_host": {

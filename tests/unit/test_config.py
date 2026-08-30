@@ -54,6 +54,34 @@ class TestConfigManagerDefaults:
         """测试封面预览默认启用"""
         assert config_manager.send_cover_preview is True
 
+    def test_show_album_overview_follows_cover_preview_by_default(self, config_manager):
+        """未单独配置概览时沿用旧封面预览开关"""
+        assert config_manager.show_album_overview is True
+
+    def test_show_album_overview_can_be_disabled(self, data_dir):
+        """测试可单独关闭本子概览"""
+        from core.base import JMConfigManager
+
+        manager = JMConfigManager(
+            {"send_cover_preview": True, "show_album_overview": False}, data_dir
+        )
+        assert manager.show_album_overview is False
+
+    def test_show_download_progress_default(self, config_manager):
+        """测试下载进度提示默认启用"""
+        assert config_manager.show_download_progress is True
+
+    def test_send_file_only_default(self, config_manager):
+        """测试仅发送文件默认关闭"""
+        assert config_manager.send_file_only is False
+
+    def test_send_file_only_can_be_enabled(self, data_dir):
+        """测试可开启仅发送文件"""
+        from core.base import JMConfigManager
+
+        manager = JMConfigManager({"send_file_only": True}, data_dir)
+        assert manager.send_file_only is True
+
     def test_admin_only_default(self, config_manager):
         """测试管理员限制默认禁用"""
         assert config_manager.admin_only is False

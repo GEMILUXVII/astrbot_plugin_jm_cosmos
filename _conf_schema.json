@@ -98,11 +98,23 @@
     "hint": "下载前是否发送漫画封面图片预览",
     "default": true
   },
+  "show_album_overview": {
+    "type": "bool",
+    "description": "显示本子概览",
+    "hint": "使用 /jm 下载前是否显示封面、标题、作者、章节数等概览信息；关闭后不显示下载前概览",
+    "default": true
+  },
   "show_download_progress": {
     "type": "bool",
     "description": "发送下载进度",
     "hint": "下载本子时按 25% 步进推送进度消息，关闭可减少消息刷屏",
     "default": true
+  },
+  "send_file_only": {
+    "type": "bool",
+    "description": "仅发送文件",
+    "hint": "开启后 /jm 下载完成只发送文件，不发送下载结果说明",
+    "default": false
   },
   "cover_recall_enabled": {
     "type": "bool",

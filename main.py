@@ -236,19 +236,22 @@ class JMCosmosPlugin(Star):
         download_succeeded = False
         try:
             # 发送开始下载提示
-            yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
+            if self.config_manager.show_download_progress:
+                yield event.plain_result(f"⏳ 开始下载本子 {album_id}，请稍候...")
 
-            # 如果配置了发送封面预览，获取详情和封面（预览失败不应中断下载）
-            if self.config_manager.send_cover_preview:
+            # 如果配置了显示本子概览，获取详情和封面（预览失败不应中断下载）
+            if self.config_manager.show_album_overview:
                 try:
                     detail = await self.browser.get_album_detail(album_id)
                 except Exception as preview_err:
                     logger.debug(f"获取封面预览详情失败，跳过预览: {preview_err}")
                     detail = None
                 if detail:
-                    # 获取封面图片
-                    cover_dir = self.config_manager.download_dir / "covers"
-                    cover_path = await self.browser.get_album_cover(album_id, cover_dir)
+                    cover_path = None
+                    if self.config_manager.send_cover_preview:
+                        # 获取封面图片
+                        cover_dir = self.config_manager.download_dir / "covers"
+                        cover_path = await self.browser.get_album_cover(album_id, cover_dir)
 
                     if cover_path and cover_path.exists():
                         # 构建封面消息链
@@ -323,15 +326,15 @@ class JMCosmosPlugin(Star):
                 # 构建消息链
                 from astrbot.api.event import MessageChain
 
-                file_chain = MessageChain(
-                    [
-                        Comp.Plain(result_msg),
-                        Comp.File(
-                            name=pack_result.output_path.name,
-                            file=file_path_str,
-                        ),
-                    ]
-                )
+                file_components = [
+                    Comp.File(
+                        name=pack_result.output_path.name,
+                        file=file_path_str,
+                    )
+                ]
+                if not self.config_manager.send_file_only:
+                    file_components.insert(0, Comp.Plain(result_msg))
+                file_chain = MessageChain(file_components)
 
                 # 根据配置决定是否使用自动撤回
                 if self.config_manager.auto_recall_enabled:
@@ -408,9 +411,10 @@ class JMCosmosPlugin(Star):
 
         download_succeeded = False
         try:
-            yield event.plain_result(
-                f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
-            )
+            if self.config_manager.show_download_progress:
+                yield event.plain_result(
+                    f"⏳ 正在获取本子 {album_id} 的第 {chapter_idx} 章节信息..."
+                )
 
             # 获取章节的真正 photo_id
             chapter_info = await self.browser.get_photo_id_by_index(
@@ -425,11 +429,12 @@ class JMCosmosPlugin(Star):
 
             photo_id, photo_title, total_chapters = chapter_info
 
-            yield event.plain_result(
-                f"📖 找到章节: {photo_title}\n"
-                f"📚 章节: {chapter_idx}/{total_chapters}\n"
-                f"⏳ 开始下载..."
-            )
+            if self.config_manager.show_download_progress:
+                yield event.plain_result(
+                    f"📖 找到章节: {photo_title}\n"
+                    f"📚 章节: {chapter_idx}/{total_chapters}\n"
+                    f"⏳ 开始下载..."
+                )
 
             # 使用真正的 photo_id 下载
             result = await self.download_manager.download_photo(
@@ -1173,7 +1178,8 @@ class JMCosmosPlugin(Star):
 
         download_succeeded = False
         try:
-            yield event.plain_result(f"⏳ 正在检查本子 {album_id} 的更新...")
+            if self.config_manager.show_download_progress:
+                yield event.plain_result(f"⏳ 正在检查本子 {album_id} 的更新...")
 
             detail = await self.browser.get_album_detail(album_id)
             if not detail:
@@ -1189,7 +1195,8 @@ class JMCosmosPlugin(Star):
 
             new_chapters = current - skip if skip else current
             scope = f"新增 {new_chapters} 章" if skip else "全部章节"
-            yield event.plain_result(f"📥 开始下载{scope}...")
+            if self.config_manager.show_download_progress:
+                yield event.plain_result(f"📥 开始下载{scope}...")
 
             result = await self.download_manager.download_album(
                 album_id, self._make_progress_callback(event), skip

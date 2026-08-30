@@ -109,9 +109,23 @@ class JMConfigManager:
         return self.plugin_config.get("send_cover_preview", True)
 
     @property
+    def show_album_overview(self) -> bool:
+        """是否在下载前显示本子概览
+
+        未显式配置时沿用旧版 send_cover_preview 的值，避免升级后改变
+        既有的封面/概览展示行为。
+        """
+        return self.plugin_config.get("show_album_overview", self.send_cover_preview)
+
+    @property
     def show_download_progress(self) -> bool:
         """是否发送下载进度消息"""
         return self.plugin_config.get("show_download_progress", True)
+
+    @property
+    def send_file_only(self) -> bool:
+        """下载完成后是否只发送文件，不发送结果说明"""
+        return self.plugin_config.get("send_file_only", False)
 
     @property
     def cover_recall_enabled(self) -> bool:

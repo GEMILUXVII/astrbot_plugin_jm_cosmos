@@ -105,7 +105,7 @@ pip install -r requirements.txt
 ```
 
 - 下载完成后自动打包并发送
-- 若开启 `send_cover_preview`，下载前会显示封面预览
+- 若开启 `show_album_overview`，使用 `/jm` 下载前会显示本子概览；`send_cover_preview` 可单独控制其中的封面图片
 
 ---
 
@@ -142,7 +142,7 @@ pip install -r requirements.txt
 /jmi 123456
 ```
 
-- 若开启 `send_cover_preview`，会同时显示封面图片
+- 若开启 `send_cover_preview`，会同时显示封面图片；关闭 `show_album_overview` 则不显示下载前概览
 
 ---
 
@@ -311,8 +311,10 @@ pip install -r requirements.txt
 | `pack_password`          | 打包密码                   | 空             | **强烈建议设置，可降低风控** |
 | `filename_show_password` | 文件名显示密码提示         | `false`        | 开启后文件名末尾添加 #PWxxx |
 | `auto_delete_after_send` | 发送后自动删除             | `true`         |  |
-| `send_cover_preview`     | 发送封面预览               | `true`         |  |
-| `show_download_progress` | 发送下载进度               | `true`         | 按 25% 步进推送，关闭可减少刷屏 |
+| `send_cover_preview`     | 发送封面预览               | `true`         | 仅控制封面图片 |
+| `show_album_overview`    | 显示本子概览               | `true`         | 下载前显示标题、作者、章节数等信息；关闭可减少下载前提示 |
+| `show_download_progress` | 发送下载进度               | `true`         | 控制开始下载、章节状态及按 25% 步进推送，关闭可减少刷屏 |
+| `send_file_only`         | 仅发送文件                 | `false`        | 开启后 `/jm` 完成时只发送文件，不发送下载结果说明 |
 | `cover_recall_enabled`   | 封面消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
 | `auto_recall_enabled`    | 文件消息自动撤回           | `false`        | 仅支持 QQ/NapCat 平台 |
 | `auto_recall_delay`      | 撤回延迟 (秒)              | `60`           | 建议 30-120 |
